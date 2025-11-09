@@ -4,7 +4,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import pool from "./config/db";
 import morgan from "morgan";
-import userRoutes from "./routes/userRoutes"
+import authRoutes from "./routes/authRoutes";
+import futsalRoutes from "./routes/futsalRoutes";
 
 dotenv.config();
 
@@ -31,7 +32,9 @@ app.get("/test-db", async (req, res) => {
 });
 
 // test route
-app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/futsal", futsalRoutes);
+
 
 
 app.get("/", (_req: Request, res: Response) => {
@@ -39,4 +42,4 @@ app.get("/", (_req: Request, res: Response) => {
 });
 
 const PORT = process.env.PORT ?? 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log("Server running on port ${PORT}"));
