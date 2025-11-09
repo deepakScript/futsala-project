@@ -46,6 +46,7 @@ export const registerUser = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Phone number is already registered" });
     }
 
+    //perform the hashing of the password
     const hashed = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
