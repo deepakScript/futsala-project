@@ -33,6 +33,7 @@ export const registerUser = async (req: Request, res: Response) => {
       where: { email }
     });
 
+    //check if email already exists
     if (existingUserByEmail) {
       return res.status(400).json({ error: "Email is already registered" });
     }
