@@ -14,7 +14,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@prisma/client": "^6.18.0",
+    "@prisma/client": "^6.19.0",
     "@types/pg": "^8.15.6",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
