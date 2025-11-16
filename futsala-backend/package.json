@@ -25,6 +25,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.2",
     "morgan": "^1.10.1",
+    "nodemailer": "^7.0.10",
     "pg": "^8.16.3"
   },
   "devDependencies": {
@@ -33,6 +34,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
     "@types/node": "^24.9.2",
+    "@types/nodemailer": "^7.0.3",
     "nodemon": "^3.1.10",
     "prisma": "^6.19.0"
   }
