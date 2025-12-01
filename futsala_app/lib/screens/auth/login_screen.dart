@@ -21,43 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
 
   void _validateAndLogin(BuildContext context) async {
-    if (!_formKey.currentState!.validate()) return;
-
-    const dummyEmail = "test@example.com";
-    const dummyPassword = "123456";
-    const dummyToken = "1234567";
-
-    final enteredEmail = _emailController.text.trim();
-    final enteredPassword = _passwordController.text;
-
-    if (enteredEmail == dummyEmail && enteredPassword == dummyPassword) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString("token", dummyToken);
-      await prefs.setString("email", dummyEmail);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Login Successful!"),
-          backgroundColor: Color(0xFF00C37A),
-          duration: Duration(seconds: 1),
-        ),
-      );
-
-      // Get router safely
-      final router = GoRouter.of(context);
-
-      // Wait for the snackbar duration, then navigate
-      Future.delayed(const Duration(seconds: 1), () {
-        context.goToHome();
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Invalid email or password"),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    context.goToHome();
   }
 
   @override
@@ -201,7 +165,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      context.goToForgotPassword();
+                    },
                     child: const Text(
                       "Forgot Password?",
                       style: TextStyle(
@@ -218,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Login Button
                 CustomButton(
                   text: "Login",
-                  onPressed: () => _validateAndLogin(context),
+                  onPressed: () => {context.goToBooking()},
                   width: double.infinity,
                   height: 55,
                 ),
@@ -239,7 +205,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: const TextStyle(color: Colors.green),
                             recognizer: TapGestureRecognizer()
                               ..onTap = () {
-                                context.go('/register');
+                                context.goToRegister();
                               },
                           ),
                         ],

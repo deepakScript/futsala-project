@@ -325,7 +325,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   children: [
                     RichText(
                       text: TextSpan(
-                        text: "Already have an account ?",
+                        text: "Already have an is in the accound ?",
                         style: const TextStyle(color: Colors.black),
                         children: [
                           TextSpan(
