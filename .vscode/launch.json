@@ -1,0 +1,40 @@
+ b{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "version": "0.2.0",
+            "configurations": [],
+            "compounds": []
+        }
+
+
+        {
+            "version": "0.2.0",
+            "configurations": [],
+            "compounds": []
+        }
+        {
+            "name": "futsala_app",
+            "cwd": "futsala_app",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "futsala_app (profile mode)",
+            "cwd": "futsala_app",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "futsala_app (release mode)",
+            "cwd": "futsala_app",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        }
+    ]
+}
