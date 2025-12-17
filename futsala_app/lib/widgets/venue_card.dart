@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:futsala_app/data/models/venue_model.dart';
 
+
+
+// Venue Card Widget
 class VenueCard extends StatefulWidget {
-  final VenueModel venue;
+  final Venue venue;
   final VoidCallback onFavoriteTap;
 
   const VenueCard({
@@ -42,21 +45,53 @@ class _VenueCardState extends State<VenueCard> {
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
                 child: SizedBox(
                   height: 180,
-                  child: PageView.builder(
-                    itemCount: widget.venue.images.length,
-                    onPageChanged: (index) {
-                      setState(() {
-                        currentIndex = index;
-                      });
-                    },
-                    itemBuilder: (context, index) {
-                      return Image.network(
-                        widget.venue.images[index],
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      );
-                    },
-                  ),
+                  child: widget.venue.images.isNotEmpty
+                      ? PageView.builder(
+                          itemCount: widget.venue.images.length,
+                          onPageChanged: (index) {
+                            setState(() {
+                              currentIndex = index;
+                            });
+                          },
+                          itemBuilder: (context, index) {
+                            return Image.network(
+                              widget.venue.images[index],
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey[300],
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.sports_soccer,
+                                      size: 60,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                );
+                              },
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Container(
+                                  color: Colors.grey[200],
+                                  child: const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        )
+                      : Container(
+                          color: Colors.grey[300],
+                          child: const Center(
+                            child: Icon(
+                              Icons.sports_soccer,
+                              size: 60,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
                 ),
               ),
 
@@ -81,29 +116,30 @@ class _VenueCardState extends State<VenueCard> {
               ),
 
               // ✅ PAGE INDICATOR DOTS
-              Positioned(
-                bottom: 10,
-                left: 0,
-                right: 0,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    widget.venue.images.length,
-                    (index) => AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      height: 6,
-                      width: currentIndex == index ? 16 : 6,
-                      decoration: BoxDecoration(
-                        color: currentIndex == index
-                            ? Colors.white
-                            : Colors.white54,
-                        borderRadius: BorderRadius.circular(10),
+              if (widget.venue.images.length > 1)
+                Positioned(
+                  bottom: 10,
+                  left: 0,
+                  right: 0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      widget.venue.images.length,
+                      (index) => AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        height: 6,
+                        width: currentIndex == index ? 16 : 6,
+                        decoration: BoxDecoration(
+                          color: currentIndex == index
+                              ? Colors.white
+                              : Colors.white54,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
 
@@ -117,11 +153,15 @@ class _VenueCardState extends State<VenueCard> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      widget.venue.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Text(
+                        widget.venue.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     Row(
@@ -137,32 +177,43 @@ class _VenueCardState extends State<VenueCard> {
                 const SizedBox(height: 4),
 
                 // LOCATION
-                Text(
-                  widget.venue.location,
-                  style: const TextStyle(color: Colors.grey),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        widget.venue.location,
+                        style: const TextStyle(color: Colors.grey, fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 8),
 
                 // SPORTS TAGS
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: widget.venue.sports.map((sport) {
-                    return Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        sport,
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    );
-                  }).toList(),
-                ),
+                if (widget.venue.sports.isNotEmpty)
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: widget.venue.sports.map((sport) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          sport,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      );
+                    }).toList(),
+                  ),
               ],
             ),
           )
