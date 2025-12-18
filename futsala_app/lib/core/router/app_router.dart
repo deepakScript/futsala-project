@@ -6,6 +6,7 @@ import 'package:futsala_app/screens/auth/save_password_screen.dart';
 import 'package:futsala_app/screens/bookings/booking_screen.dart';
 import 'package:futsala_app/screens/favourites/favorite_screen.dart';
 import 'package:futsala_app/screens/futsal/futsal_page.dart';
+import 'package:futsala_app/screens/futsal_view/futsal_detail_screen.dart';
 import 'package:futsala_app/screens/main/ScaffoldWithNavBar.dart';
 import 'package:futsala_app/screens/profile/profile_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -37,6 +38,7 @@ class AppRoutes {
   static const String register = '/register';
   static const String home = '/';
   static const String futsal = '/futsal';
+  static const String futsalView = '/futsalView';
   static const String favourites = '/favorites';
   static const String booking = '/booking';
   static const String profile = '/profile';
@@ -50,6 +52,7 @@ class AppRoutes {
   static const String registerName = 'register';
   static const String homeName = 'home';
   static const String futsalName = 'futsal';
+  static const String futsalViewName = 'futsalView';
   static const String favouriteName = 'favourite';
   static const String bookingName = 'booking';
   static const String profileName = 'profile';
@@ -106,6 +109,14 @@ class AppRoutes {
       name: registerName,
       builder: (context, state) => const SignUpScreen(),
     ),
+    GoRoute(
+      path: '${AppRoutes.futsalView}/:venueId',
+      name: AppRoutes.futsalViewName,
+      builder: (context, state) {
+        final venueId = state.pathParameters['venueId']!;
+        return VenueDetailsPage(venueId: venueId);
+      },
+    ),
     ShellRoute(
       builder: (context, state, child) {
         return ScaffoldWithNavBar(child: child);
@@ -124,7 +135,7 @@ class AppRoutes {
         GoRoute(
           path: favourites,
           name: favouriteName,
-          builder: (context, state) => const FavouritesScreen(),
+          builder: (context, state) => const FavoritesScreen(),
         ),
         GoRoute(
           path: booking,
