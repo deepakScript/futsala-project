@@ -4,14 +4,14 @@ import 'package:futsala_app/screens/auth/email_verification.dart';
 import 'package:futsala_app/screens/auth/forgot_password_screen.dart';
 import 'package:futsala_app/screens/auth/save_password_screen.dart';
 import 'package:futsala_app/screens/bookings/booking_screen.dart';
-import 'package:futsala_app/screens/favourites/favorite_screen.dart';
+import 'package:futsala_app/screens/bookings/my_booking_screen.dart';
+import 'package:futsala_app/screens/favourites/favorites_screen.dart';
 import 'package:futsala_app/screens/futsal/futsal_page.dart';
 import 'package:futsala_app/screens/futsal_view/futsal_detail_screen.dart';
 import 'package:futsala_app/screens/main/ScaffoldWithNavBar.dart';
 import 'package:futsala_app/screens/profile/profile_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-
 import 'package:futsala_app/screens/splash/splash_screen.dart';
 import 'package:futsala_app/screens/auth/login_screen.dart';
 import 'package:futsala_app/screens/auth/register_screen.dart';
@@ -30,7 +30,7 @@ class AppRoutes {
       GlobalKey<NavigatorState>(debugLabel: 'shell');
 
   // Route path constants
-  static const String splash = '/spalsh';
+  static const String splash = '/splash';
   static const String login = '/login';
   static const String forgotPassword = '/forgot-password';
   static const String otpVerification = '/otpVerification';
@@ -41,6 +41,7 @@ class AppRoutes {
   static const String futsalView = '/futsalView';
   static const String favourites = '/favorites';
   static const String booking = '/booking';
+  static const String futsalBooking = '/futsal-booking/:venueId';
   static const String profile = '/profile';
 
   // Route name constants (for named navigation)
@@ -55,15 +56,16 @@ class AppRoutes {
   static const String futsalViewName = 'futsalView';
   static const String favouriteName = 'favourite';
   static const String bookingName = 'booking';
+  static const String futsalBookingName = 'futsal-booking';
   static const String profileName = 'profile';
 
   // Create GoRouter instance
-  static GoRouter createRouter(BuildContext context) {
+  static GoRouter createRouter(BuildContext context, bool isLoggedIn) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     return GoRouter(
       navigatorKey: rootNavigatorKey,
-      initialLocation: splash,
+      initialLocation: isLoggedIn ? home : splash,
       refreshListenable: authProvider,
       debugLogDiagnostics: true, // Enable for debugging
 
@@ -117,6 +119,20 @@ class AppRoutes {
         return VenueDetailsPage(venueId: venueId);
       },
     ),
+    GoRoute(
+      path: futsalBooking,
+      name: futsalBookingName,
+      builder: (context, state) {
+        final venueId = state.pathParameters['venueId']!;
+        final venueName = state.uri.queryParameters['name'] ?? '';
+        final venueLocation = state.uri.queryParameters['location'] ?? '';
+        return BookingScreen(
+          futsalId: venueId,
+          venueName: venueName,
+          venueLocation: venueLocation,
+        );
+      },
+    ),
     ShellRoute(
       builder: (context, state, child) {
         return ScaffoldWithNavBar(child: child);
@@ -140,7 +156,7 @@ class AppRoutes {
         GoRoute(
           path: booking,
           name: bookingName,
-          builder: (context, state) => const MyBookingPage(),
+          builder: (context, state) => const MyBookingsScreen(),
         ),
         GoRoute(
           path: profile,

@@ -4,8 +4,8 @@ import 'package:futsala_app/data/models/user_model.dart';
 import 'package:futsala_app/provider/futsal_provider.dart';
 import 'package:futsala_app/screens/home/models.dart';
 import 'package:futsala_app/widgets/venue_card.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-
 
 List<Sport> sportsList = [
   Sport(name: "Football", imageUrl: "assets/football.png"),
@@ -46,14 +46,19 @@ class _HomePageState extends State<HomePage> {
 
     // Fetch venues - provider handles token internally
     if (mounted) {
-      final futsalProvider = Provider.of<FutsalProvider>(context, listen: false);
+      final futsalProvider = Provider.of<FutsalProvider>(
+        context,
+        listen: false,
+      );
       final result = await futsalProvider.getAllVenues();
-      
+
       // Handle response if needed
       if (result['success'] == false) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(result['message'] ?? 'Failed to load venues')),
+            SnackBar(
+              content: Text(result['message'] ?? 'Failed to load venues'),
+            ),
           );
         }
       }
@@ -68,11 +73,11 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _onSearchChanged(String query) async {
     final futsalProvider = Provider.of<FutsalProvider>(context, listen: false);
-    
+
     // Use API search for more comprehensive results
     if (query.isNotEmpty) {
       final result = await futsalProvider.searchVenues(location: query);
-      
+
       // Handle search response if needed
       if (result['success'] == false && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -97,9 +102,12 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            final futsalProvider = Provider.of<FutsalProvider>(context, listen: false);
+            final futsalProvider = Provider.of<FutsalProvider>(
+              context,
+              listen: false,
+            );
             final result = await futsalProvider.refreshVenues();
-            
+
             if (result['success'] == false && mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(result['message'] ?? 'Refresh failed')),
@@ -185,43 +193,6 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 20),
 
                 // Sports Section
-                const Text(
-                  "Sports",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  height: 100,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: sportsList.length,
-                    itemBuilder: (context, index) {
-                      final sport = sportsList[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: Column(
-                          children: [
-                            Container(
-                              height: 60,
-                              width: 60,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[200],
-                                borderRadius: BorderRadius.circular(12),
-                                image: DecorationImage(
-                                  image: AssetImage(sport.imageUrl),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 5),
-                            Text(sport.name),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-
                 const SizedBox(height: 20),
 
                 // Venues Section
@@ -235,7 +206,8 @@ class _HomePageState extends State<HomePage> {
                 Consumer<FutsalProvider>(
                   builder: (context, futsalProvider, child) {
                     // Show loading indicator
-                    if (futsalProvider.isLoading && futsalProvider.venues.isEmpty) {
+                    if (futsalProvider.isLoading &&
+                        futsalProvider.venues.isEmpty) {
                       return const Center(
                         child: Padding(
                           padding: EdgeInsets.all(40.0),
@@ -245,7 +217,8 @@ class _HomePageState extends State<HomePage> {
                     }
 
                     // Show error message
-                    if (futsalProvider.error != null && futsalProvider.venues.isEmpty) {
+                    if (futsalProvider.error != null &&
+                        futsalProvider.venues.isEmpty) {
                       return Center(
                         child: Padding(
                           padding: const EdgeInsets.all(20.0),
@@ -259,10 +232,15 @@ class _HomePageState extends State<HomePage> {
                               const SizedBox(height: 10),
                               ElevatedButton(
                                 onPressed: () async {
-                                  final result = await futsalProvider.getAllVenues();
+                                  final result = await futsalProvider
+                                      .getAllVenues();
                                   if (result['success'] == false && mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(result['message'] ?? 'Retry failed')),
+                                      SnackBar(
+                                        content: Text(
+                                          result['message'] ?? 'Retry failed',
+                                        ),
+                                      ),
                                     );
                                   }
                                 },
@@ -275,7 +253,8 @@ class _HomePageState extends State<HomePage> {
                     }
 
                     // Show empty state
-                    if (futsalProvider.searchResults.isEmpty && futsalProvider.venues.isEmpty) {
+                    if (futsalProvider.searchResults.isEmpty &&
+                        futsalProvider.venues.isEmpty) {
                       return const Center(
                         child: Padding(
                           padding: EdgeInsets.all(40.0),
@@ -288,8 +267,9 @@ class _HomePageState extends State<HomePage> {
                     }
 
                     // Use searchResults if available, otherwise use venues
-                    final venuesToDisplay = futsalProvider.searchResults.isNotEmpty 
-                        ? futsalProvider.searchResults 
+                    final venuesToDisplay =
+                        futsalProvider.searchResults.isNotEmpty
+                        ? futsalProvider.searchResults
                         : futsalProvider.venues;
 
                     // Show venues list using VenueCard
@@ -297,9 +277,9 @@ class _HomePageState extends State<HomePage> {
                       children: venuesToDisplay.map((venue) {
                         return GestureDetector(
                           onTap: () {
-                            // Navigate to venue details
-                            // Get.toNamed('/venue-details', arguments: venue.id);
-                            // Or Navigator.pushNamed(context, '/venue-details', arguments: venue.id);
+                            context.goNamed('futsalView', pathParameters: {
+                              'venueId':venue.id
+                            });
                           },
                           child: VenueCard(
                             venue: venue,
