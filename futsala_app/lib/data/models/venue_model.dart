@@ -1,9 +1,10 @@
 class Venue {
   final String id;
   final String name;
-  final String location; 
+  final String location;
   final double rating;
-  final List<String> sports; 
+  final int? totalReviews;
+  final List<String> amenities;
   final List<String> images;
   final bool isFavorite; // Add this field
 
@@ -12,7 +13,8 @@ class Venue {
     required this.name,
     required this.location,
     required this.rating,
-    required this.sports,
+    required this.totalReviews,
+    required this.amenities,
     required this.images,
     this.isFavorite = false, // Default to false
   });
@@ -22,18 +24,12 @@ class Venue {
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
       location: json['location']?.toString() ?? json['address']?.toString() ?? '',
-      rating: (json['rating'] is int) 
-          ? (json['rating'] as int).toDouble() 
-          : (json['rating'] as double? ?? 0.0),
-      sports: (json['sports'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList() ?? 
-          (json['amenities'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList() ?? [],
-      images: (json['images'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList() ?? [],
+      rating: (json['rating'] is int) ? (json['rating'] as int).toDouble(): (json['rating'] as double? ?? 0.0),
+      totalReviews: (json['totalReviews']),
+      amenities : (json['amenities'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??[],
+      images:(json['images'] as List<dynamic>?) ?.map((e) => e.toString())
+              .toList() ??
+          [],
       isFavorite: json['isFavorite'] ?? false,
     );
   }
@@ -44,7 +40,8 @@ class Venue {
       "name": name,
       "location": location,
       "rating": rating,
-      "sports": sports,
+      "sports": amenities,
+      "totalRevies": totalReviews,
       "images": images,
       "isFavorite": isFavorite,
     };

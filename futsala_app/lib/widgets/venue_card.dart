@@ -37,6 +37,7 @@ class _VenueCardState extends State<VenueCard> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        
         children: [
           // ✅ IMAGE SLIDER
           Stack(
@@ -45,6 +46,7 @@ class _VenueCardState extends State<VenueCard> {
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
                 child: SizedBox(
                   height: 180,
+                  
                   child: widget.venue.images.isNotEmpty
                       ? PageView.builder(
                           itemCount: widget.venue.images.length,
@@ -195,11 +197,11 @@ class _VenueCardState extends State<VenueCard> {
                 const SizedBox(height: 8),
 
                 // SPORTS TAGS
-                if (widget.venue.sports.isNotEmpty)
+                if (widget.venue.amenities.isNotEmpty)
                   Wrap(
                     spacing: 6,
                     runSpacing: 6,
-                    children: widget.venue.sports.map((sport) {
+                    children: widget.venue.amenities.map((sport) {
                       return Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
