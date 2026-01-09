@@ -5,6 +5,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 class AuthProvider extends ChangeNotifier {
+  AuthProvider({UserModel? initialUser, String? initialToken})
+    : _user = initialUser,
+      _token = initialToken;
+
   UserModel? _user;
   String? _token;
   bool _isLoading = false;
