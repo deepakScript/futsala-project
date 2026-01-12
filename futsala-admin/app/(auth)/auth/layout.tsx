@@ -1,4 +1,5 @@
-import ThemeToggler from '@/components/ThemeToggler';
+import React from 'react';
+import ThemeToggler from '@/components/ui/ThemeToggler';
 
 const AuthLayout = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -9,6 +10,6 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
       {children}
     </div>
   );
-};
+};  
 
 export default AuthLayout;
