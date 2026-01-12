@@ -70,7 +70,7 @@ export const registerUser = async (req: Request, res: Response) => {
         return res.status(400).json({ error: "Email already exists" });
       }
     }
-    res.status(500).json({ error: "Registration feeled" });
+    res.status(500).json({ error: "Registration failed" });
     console.log(error);
     
   }
@@ -104,8 +104,8 @@ export const loginUser = async (req: Request, res: Response) => {
         role: user.role,
         type: 'access'
       } as AccessTokenPayload,
-      process.env.JWT_SECRET || 'your-default-secret-key',
-      { expiresIn: '15m' } // 15 minutes
+      process.env.JWT_ACCESS_SECRET || 'your-default-secret-key',
+      { expiresIn: '1d' } // 15 minutes
     );
 
     // Generate refresh token (long-lived)
@@ -136,7 +136,7 @@ export const loginUser = async (req: Request, res: Response) => {
       user: userWithoutPassword,
       auth: {
         accessToken,
-        expiresIn: 900 // 15 minutes in seconds
+        expiresIn: 9000 // 15 minutes in seconds
       }
     });
   } catch (error) {
@@ -156,31 +156,172 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const resetToken = crypto.randomBytes(32).toString("hex");
-    const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
-    const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hour expiry
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Store hashed token in DB
+    // Hash OTP before storing
+    const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 10); // 10 minutes expiry
+    console.log("Reset token generated for user:", user.email);
+    
+    // Delete old OTPs for this user (optional but recommended)
+    await prisma.passwordResetToken.deleteMany({
+      where: { userId: user.id }
+    });
+    
+
+    // Save new OTP
     await prisma.passwordResetToken.create({
       data: {
-        token: hashedToken,
+        token: hashedOtp,
         userId: user.id,
         expiresAt,
       },
     });
 
-    const html = <p>Your password reset token is:</p><b>${resetToken}</b>;
-    await sendMail({ to: user.email, subject: "Password Reset Token", html });
+    console.log("OTP saved to database, attempting to send email...");
+
+    // Email OTP
+    const html = `
+      <p>Your password reset OTP is:</p>
+      <h2>${otp}</h2>
+      <p>This OTP will expire in 10 minutes.</p>
+    `;
+
+    try {
+      // Validate email configuration before sending
+      if (!process.env.MAIL_HOST || !process.env.MAIL_USER || !process.env.MAIL_PASSWORD) {
+        console.error("❌ Email configuration missing! Check .env file for:");
+        console.error("   - MAIL_HOST:", process.env.MAIL_HOST ? "✓" : "✗");
+        console.error("   - MAIL_PORT:", process.env.MAIL_PORT ? "✓" : "✗");
+        console.error("   - MAIL_USER:", process.env.MAIL_USER ? "✓" : "✗");
+        console.error("   - MAIL_PASSWORD:", process.env.MAIL_PASSWORD ? "✓" : "✗");
+        res.status(500).json({ message: "Email service not configured. Please contact administrator." });
+        return;
+      }
+
+      await sendMail({
+        to: user.email,
+        subject: "Password Reset OTP",
+        html,
+      });
+      console.log("✅ OTP sent successfully to:", user.email);
+    } catch (mailError) {
+      console.error("❌ Email sending failed:");
+      console.error("Error details:", mailError);
+      if (mailError instanceof Error) {
+        console.error("Error message:", mailError.message);
+        console.error("Error stack:", mailError.stack);
+      }
+      res.status(500).json({ 
+        message: "Failed to send OTP to email",
+        error: process.env.NODE_ENV === 'development' ? (mailError as Error).message : undefined
+      });
+      return;
+    }
 
     res.status(200).json({
-      message: "Reset token sent to email",
-      // Don't send the token in the response for security
+      message: "OTP sent to email",
     });
+
   } catch (error) {
     console.error("Forgot Password Error:", (error as Error).message);
     res.status(500).json({ message: "Internal server error" });
   }
 };
+export const otpVerification = async (req: Request, res: Response): Promise<void> => {
+  const { email, otp } = req.body as { email: string; otp: string };
+
+  try {
+    // 1. Find the user
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    // 2. Hash the OTP received from user
+    const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+
+    // 3. Check OTP in database
+    const tokenRecord = await prisma.passwordResetToken.findFirst({
+      where: {
+        userId: user.id,
+        token: hashedOtp,
+      },
+    });
+
+    if (!tokenRecord) {
+      res.status(400).json({ message: "Invalid OTP" });
+      return;
+    }
+
+    // 4. Check if OTP expired
+    if (tokenRecord.expiresAt < new Date()) {
+      // delete old OTP
+      await prisma.passwordResetToken.delete({ where: { id: tokenRecord.id } });
+      res.status(400).json({ message: "OTP expired" });
+      return;
+    }
+
+    // 5. OTP is valid — delete it to prevent reuse
+    await prisma.passwordResetToken.delete({
+      where: { id: tokenRecord.id },
+    });
+
+    // 6. Successful verification
+    res.status(200).json({
+      message: "OTP verified successfully",
+    });
+
+  } catch (error) {
+    console.error("OTP Verification Error:", (error as Error).message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+export const savePassword = async (req: Request, res: Response): Promise<void> => {
+  const { email, newPassword } = req.body as {
+    email: string;
+    newPassword: string;
+  };
+
+  try {
+    // 1. Find the user
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    // 2. Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // 3. Update the password in database
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword },
+    });
+
+    // 4. Delete all old reset tokens for security
+    await prisma.passwordResetToken.deleteMany({
+      where: { userId: user.id },
+    });
+
+    // 5. Response
+    res.status(200).json({
+      message: "Password updated successfully",
+    });
+
+  } catch (error) {
+    console.error("Save Password Error:", (error as Error).message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
 
 
 export const refreshAccessToken = async (req: Request, res: Response) => {
