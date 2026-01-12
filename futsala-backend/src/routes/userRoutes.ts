@@ -1,10 +1,12 @@
 import express from "express";
-import { registerUser, getAllUsers, loginUser } from "../controllers/userController";
+import { getProfile,deleteAccount,updateProfile, } from "../controllers/userController";
+import { verifyToken } from "../middlewares/verifyToken";
 
 const router = express.Router();
 
-router.post("/register", registerUser);
-router.post("/login", loginUser);
-router.get("/", getAllUsers);
+router.get("/me", verifyToken, getProfile);
+router.put("/update", verifyToken, updateProfile);
+router.delete("/delete", verifyToken, deleteAccount);
+
 
 export default router;
