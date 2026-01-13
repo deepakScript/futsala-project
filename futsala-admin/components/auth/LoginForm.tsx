@@ -22,6 +22,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import axios from '@/lib/axios';
+import { useAuthStore } from '@/lib/store/auth-store';
 
 const formSchema = z.object({
   email: z
@@ -39,6 +41,7 @@ const formSchema = z.object({
 
 const LoginForm = () => {
   const router = useRouter();
+  const setUser = useAuthStore((state) => state.setUser);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -48,8 +51,19 @@ const LoginForm = () => {
     },
   });
 
-  const handleSubmit = (data: z.infer<typeof formSchema>) => {
-    router.push('/');
+  const handleSubmit = async (data: z.infer<typeof formSchema>) => {
+    try {
+      const response = await axios.post('/auth/login', data);
+
+      if (response.status === 200) {
+        setUser(response.data.user);
+        router.push('/dashboard');
+        router.refresh();
+      }
+    } catch (error: any) {
+      console.error('Login error', error);
+      alert(error.response?.data?.message || 'Something went wrong');
+    }
   };
 
   return (
