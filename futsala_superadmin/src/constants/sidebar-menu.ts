@@ -52,21 +52,21 @@ export const SIDEBAR_GROUPS = [
         href: '/users',
         icon: Users,
       },
-      {
-        name: 'Reviews',
-        href: '/reviews',
-        icon: Star,
-      },
+      // {
+      //   name: 'Reviews',
+      //   href: '/reviews',
+      //   icon: Star,
+      // },
     ],
   },
   {
     name: 'Marketing & Support',
     items: [
-      {
-        name: 'Support',
-        href: '/support',
-        icon: LifeBuoy,
-      },
+      // {
+      //   name: 'Support',
+      //   href: '/support',
+      //   icon: LifeBuoy,
+      // },
       {
         name: 'Reports',
         href: '/reports',

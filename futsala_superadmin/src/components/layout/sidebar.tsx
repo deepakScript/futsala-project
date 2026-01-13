@@ -56,7 +56,7 @@ export function Sidebar() {
       </nav>
       
       <div className="p-4 mt-auto border-t space-y-4">
-        <button
+        {/* <button
           onClick={() => {
             const { logout } = useAuthStore.getState()
             logout().then(() => {
@@ -67,7 +67,7 @@ export function Sidebar() {
         >
           <LogOut className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
           <span className="text-sm">Logout</span>
-        </button>
+        </button> */}
         
         <div className="bg-muted/50 rounded-lg p-3">
           <p className="text-xs font-medium text-foreground mb-1">Super Admin Role</p>
