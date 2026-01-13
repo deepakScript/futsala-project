@@ -45,8 +45,21 @@ model User {
   venues        Venue[]
   reviews       Review[]
   notifications Notification[]
+  passwordResetTokens PasswordResetToken[]
   
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("password_reset_tokens")
 }
 
 model Venue {
@@ -55,8 +68,6 @@ model Venue {
   description   String
   address       String
   city          String
-  latitude      Float?
-  longitude     Float?
   phoneNumber   String
   email         String?
   images        String[]
@@ -79,18 +90,13 @@ model Court {
   id            String        @id @default(uuid())
   name          String        // "Court A", "Court B"
   venueId       String
-  courtType     String        // "5-a-side", "7-a-side"
-  surfaceType   String        // "Artificial Turf", "Natural Grass"
-  isIndoor      Boolean       @default(false)
   pricePerHour  Float
   isActive      Boolean       @default(true)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-  
   venue         Venue         @relation(fields: [venueId], references: [id], onDelete: Cascade)
   timeSlots     TimeSlot[]
   bookings      Booking[]
-  
   @@map("courts")
 }
 

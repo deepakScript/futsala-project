@@ -1,11 +1,11 @@
-import express from "express";
+import{ Router } from "express";
 import { getAllVenues, getVenueById, searchVenues } from "../controllers/futsalController";
 
 
-const router = express.Router();
+const router = Router();
 
-router.get("/", getAllVenues);
-router.get("/:id", getVenueById);
-router.get("/search-venue", searchVenues)
+router.get("/venue", getAllVenues);
+router.get("/venue-search", searchVenues);
+router.get("/venue/:id", getVenueById);
 
 export default router;
