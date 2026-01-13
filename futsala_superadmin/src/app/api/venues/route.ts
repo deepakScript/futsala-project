@@ -48,6 +48,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Verify that the owner has the correct role
+    const owner = await prisma.user.findFirst({
+      where: {
+        id: ownerId,
+        role: 'VENUE_OWNER'
+      }
+    })
+
+    if (!owner) {
+      return NextResponse.json(
+        { error: "Invalid owner: User must be a verified venue owner" },
+        { status: 400 }
+      )
+    }
+
     const venue = await prisma.venue.create({
       data: {
         name,

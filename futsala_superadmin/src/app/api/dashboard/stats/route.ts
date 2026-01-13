@@ -13,7 +13,7 @@ export async function GET() {
       venuesWithCourts
     ] = await Promise.all([
       prisma.venue.count(),
-      prisma.user.count({ where: { role: 'VENUE_OWNER', isVerified: true } }),
+      prisma.user.count({ where: { role: 'VENUE_OWNER' } }),
       prisma.booking.count(),
       prisma.booking.aggregate({
         _sum: { totalPrice: true },

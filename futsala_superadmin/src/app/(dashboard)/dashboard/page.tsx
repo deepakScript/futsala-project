@@ -49,10 +49,10 @@ export default function DashboardPage() {
       description: "Registered in platform",
     },
     {
-      title: "Active Venue Owners",
+      title: "Venue Owners",
       value: metrics.activeVenueOwners.toString(),
       icon: ShieldCheck,
-      description: "Verified owners",
+      description: "Total owners registered",
     },
     {
       title: "Total Bookings",

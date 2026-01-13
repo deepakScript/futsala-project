@@ -1,7 +1,0 @@
-﻿src/app/(auth)/page.tsx(17,30): error TS2307: Cannot find module '@/store/zustand/auth-store' or its corresponding type declarations.
-src/app/api/dashboard/stats/route.ts(34,23): error TS2353: Object literal may only specify known properties, and 'bookings' does not exist in type 'VenueCountOutputTypeSelect<DefaultArgs>'.
-src/app/api/dashboard/stats/route.ts(38,11): error TS2353: Object literal may only specify known properties, and 'bookings' does not exist in type 'VenueOrderByWithRelationInput | VenueOrderByWithRelationInput[]'.
-src/app/api/dashboard/stats/route.ts(56,36): error TS2339: Property '_count' does not exist on type '{ name: string; id: string; email: string | null; phoneNumber: string; createdAt: Date; updatedAt: Date; description: string; address: string; city: string; latitude: number | null; ... 6 more ...; ownerId: string; }'.
-src/app/api/dashboard/stats/route.ts(73,26): error TS2339: Property '_count' does not exist on type '{ name: string; id: string; email: string | null; phoneNumber: string; createdAt: Date; updatedAt: Date; description: string; address: string; city: string; latitude: number | null; ... 6 more ...; ownerId: string; }'.
-src/components/layout/navbar.tsx(4,30): error TS2307: Cannot find module '@/store/zustand/auth-store' or its corresponding type declarations.
-src/components/layout/sidebar.tsx(8,30): error TS2307: Cannot find module '@/store/zustand/auth-store' or its corresponding type declarations.
