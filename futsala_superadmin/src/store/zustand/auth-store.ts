@@ -1,12 +1,12 @@
 import { create } from 'zustand'
-import apiClient from '@/lib/api-client'
-import { AxiosError } from 'axios'
+import { persist, createJSONStorage } from 'zustand/middleware'
+import axiosInstance from '@/lib/axios'
 
 interface User {
   id: string
   email: string
   fullName: string
-  role: string
+  role: 'ADMIN' | 'VENUE_OWNER' | 'CUSTOMER'
 }
 
 interface AuthState {
@@ -14,47 +14,61 @@ interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
   error: string | null
-  
-  // Actions
-  login: (credentials: { email: string; password: any }) => Promise<void>
+  login: (credentials: { email: string; password: string }) => Promise<void>
   logout: () => Promise<void>
-  setUser: (user: User | null) => void
-  setError: (error: string | null) => void
+  setAuth: (user: User) => void
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isAuthenticated: false,
-  isLoading: false,
-  error: null,
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
 
-  setUser: (user) => set({ user, isAuthenticated: !!user }),
-  setError: (error) => set({ error }),
+      login: async (credentials) => {
+        set({ isLoading: true, error: null })
+        try {
+          const response = await axiosInstance.post('/api/auth/login', credentials)
+          set({ 
+            user: response.data.user, 
+            isAuthenticated: true, 
+            isLoading: false 
+          })
+        } catch (err: any) {
+          const errorMessage = err.response?.data?.error || 'Login failed'
+          set({ 
+            error: errorMessage, 
+            isLoading: false 
+          })
+          throw new Error(errorMessage)
+        }
+      },
 
-  login: async (credentials) => {
-    set({ isLoading: true, error: null })
-    try {
-      const response = await apiClient.post('/auth/login', credentials)
-      const { user } = response.data
-      set({ user, isAuthenticated: true, isLoading: false })
-    } catch (error) {
-      let errorMessage = 'An error occurred during login'
-      if (error instanceof AxiosError && error.response) {
-        errorMessage = error.response.data.error || errorMessage
-      }
-      set({ error: errorMessage, isLoading: false })
-      throw new Error(errorMessage)
+      logout: async () => {
+        set({ isLoading: true })
+        try {
+          await axiosInstance.post('/api/auth/logout')
+        } catch (err) {
+          console.error('Logout API call failed:', err)
+        } finally {
+          set({ 
+            user: null, 
+            isAuthenticated: false, 
+            isLoading: false,
+            error: null 
+          })
+        }
+      },
+
+      setAuth: (user) => set({ user, isAuthenticated: true }),
+    }),
+    {
+      name: 'auth-storage',
+      storage: createJSONStorage(() => localStorage),
     }
-  },
+  )
+)
 
-  logout: async () => {
-    set({ isLoading: true })
-    try {
-      await apiClient.post('/auth/logout')
-      set({ user: null, isAuthenticated: false, isLoading: false, error: null })
-    } catch (error) {
-      set({ isLoading: false })
-      console.error('Logout error:', error)
-    }
-  },
-}))
+export default useAuthStore

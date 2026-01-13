@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:seed": "npx tsx prisma/seed.ts",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.2.0",
@@ -16,6 +17,7 @@
     "@radix-ui/react-slot": "^1.2.4",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
+    "chart.js": "^4.5.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "jsonwebtoken": "^9.0.3",
@@ -23,6 +25,7 @@
     "next": "16.1.1",
     "pg": "^8.16.3",
     "react": "19.2.3",
+    "react-chartjs-2": "^5.3.1",
     "react-dom": "19.2.3",
     "tailwind-merge": "^3.4.0",
     "zustand": "^5.0.10"
