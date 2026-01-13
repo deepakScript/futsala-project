@@ -83,11 +83,6 @@ export const SIDEBAR_GROUPS = [
     name: 'Administration',
     items: [
       {
-        name: 'Admins',
-        href: '/admins',
-        icon: ShieldCheck,
-      },
-      {
         name: 'Settings',
         href: '/settings',
         icon: Settings,

@@ -18,7 +18,6 @@ async function main() {
       fullName: 'Super Admin',
       phoneNumber: '+977-9800000000',
       role: 'ADMIN',
-      isVerified: true,
     },
   })
 

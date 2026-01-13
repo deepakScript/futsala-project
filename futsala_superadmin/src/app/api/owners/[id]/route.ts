@@ -70,8 +70,7 @@ export async function PATCH(
       select: {
         id: true,
         fullName: true,
-        email: true,
-        isVerified: true
+        email: true
       }
     })
 

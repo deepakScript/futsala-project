@@ -15,7 +15,9 @@ import {
   Building2,
   Loader2,
   TrendingUp,
-  History
+  History,
+  UserPlus,
+  RefreshCcw
 } from "lucide-react"
 import { 
   Card, 
@@ -67,7 +69,7 @@ export default function VenueOwnersPage() {
     owners, 
     isLoading, 
     fetchOwners, 
-    toggleOwnerVerification, 
+    createOwner,
     resetOwnerPassword, 
     deleteOwner,
     fetchOwnerPerformance,
@@ -75,24 +77,37 @@ export default function VenueOwnersPage() {
   } = useOwnerStore()
   
   const [searchTerm, setSearchTerm] = useState("")
-  const [filterType, setFilterType] = useState("all")
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false)
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null)
   const [newPassword, setNewPassword] = useState("")
   const [isPerfSheetOpen, setIsPerfSheetOpen] = useState(false)
+  
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    phoneNumber: "",
+    password: ""
+  })
 
   useEffect(() => {
     fetchOwners()
   }, [fetchOwners])
 
+  const handleAddOwner = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      await createOwner(formData)
+      setIsAddDialogOpen(false)
+      setFormData({ fullName: "", email: "", phoneNumber: "", password: "" })
+    } catch (error) {
+      alert("Failed to create venue owner")
+    }
+  }
+
   const filteredOwners = owners.filter(owner => {
-    const matchesSearch = owner.fullName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-         owner.email.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    if (filterType === "all") return matchesSearch
-    if (filterType === "verified") return matchesSearch && owner.isVerified
-    if (filterType === "unverified") return matchesSearch && !owner.isVerified
-    return matchesSearch
+    return owner.fullName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           owner.email.toLowerCase().includes(searchTerm.toLowerCase())
   })
 
   const handleResetPassword = async () => {
@@ -119,12 +134,21 @@ export default function VenueOwnersPage() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Venue Owners</h2>
           <p className="text-muted-foreground">
-            Manage partner accounts, identity verification, and track performance.
+            Manage partner accounts and track performance.
           </p>
+        </div>
+        <div className="flex gap-2">
+           <Button variant="outline" size="sm" onClick={() => fetchOwners()} disabled={isLoading}>
+             <RefreshCcw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+             Refresh
+           </Button>
+           <Button className="shadow-smooth" onClick={() => setIsAddDialogOpen(true)}>
+             <UserPlus className="h-4 w-4 mr-2" /> Add Owner
+           </Button>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
         <Card className="border-none shadow-premium">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">Total Owners</CardTitle>
@@ -134,18 +158,6 @@ export default function VenueOwnersPage() {
             <div className="text-2xl font-bold">{owners.length}</div>
             <p className="text-xs text-muted-foreground">
               Across the whole platform
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="border-none shadow-premium">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Verified Partners</CardTitle>
-            <ShieldCheck className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{owners.filter(o => o.isVerified).length}</div>
-            <p className="text-xs text-muted-foreground">
-              Identity confirmed
             </p>
           </CardContent>
         </Card>
@@ -175,13 +187,6 @@ export default function VenueOwnersPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Tabs defaultValue="all" className="w-[400px]" onValueChange={setFilterType}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="verified">Verified</TabsTrigger>
-            <TabsTrigger value="unverified">Pending</TabsTrigger>
-          </TabsList>
-        </Tabs>
       </div>
 
       <Card className="border-none shadow-premium transition-all">
@@ -191,7 +196,6 @@ export default function VenueOwnersPage() {
               <TableRow className="hover:bg-transparent border-b-muted/20">
                 <TableHead>Owner Info</TableHead>
                 <TableHead>Contact</TableHead>
-                <TableHead>Identity</TableHead>
                 <TableHead>Venues</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -212,11 +216,6 @@ export default function VenueOwnersPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={owner.isVerified ? "default" : "outline"} className={owner.isVerified ? "bg-emerald-500/10 text-emerald-500 border-none" : ""}>
-                      {owner.isVerified ? "Verified" : "Unverified"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
                     <Badge variant="secondary" className="gap-1">
                       <Building2 className="h-3 w-3" /> {owner._count?.venues}
                     </Badge>
@@ -233,9 +232,6 @@ export default function VenueOwnersPage() {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => handleViewPerformance(owner.id)} className="cursor-pointer gap-2">
                           <BarChart3 className="h-4 w-4" /> View Performance
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => toggleOwnerVerification(owner.id, owner.isVerified)} className="cursor-pointer gap-2">
-                          {owner.isVerified ? <><ShieldAlert className="h-4 w-4" /> Unverify Identity</> : <><ShieldCheck className="h-4 w-4 text-emerald-500" /> Verify Identity</>}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => { setSelectedOwnerId(owner.id); setIsResetDialogOpen(true); }} className="cursor-pointer gap-2">
                           <Key className="h-4 w-4" /> Reset Password
@@ -374,6 +370,72 @@ export default function VenueOwnersPage() {
           )}
         </SheetContent>
       </Sheet>
+      {/* Add Owner Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 font-bold text-xl">
+              <UserPlus className="h-5 w-5 text-primary" />
+              Create Venue Owner
+            </DialogTitle>
+            <DialogDescription>
+              Create a new account for a venue partner.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAddOwner}>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="fullName" className="text-sm font-semibold">Full Name</Label>
+                <Input 
+                  id="fullName" 
+                  placeholder="John Doe" 
+                  required
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="email" className="text-sm font-semibold">Email Address</Label>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="owner@futsala.com" 
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="phoneNumber" className="text-sm font-semibold">Phone Number</Label>
+                <Input 
+                  id="phoneNumber" 
+                  placeholder="+977-XXXXXXXXXX" 
+                  value={formData.phoneNumber}
+                  onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="password" className="text-sm font-semibold">Temporary Password</Label>
+                <Input 
+                  id="password" 
+                  type="password" 
+                  placeholder="••••••••" 
+                  required
+                  value={formData.password}
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Create Owner Account
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

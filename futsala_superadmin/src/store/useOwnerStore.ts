@@ -6,7 +6,6 @@ interface Owner {
   fullName: string
   email: string
   phoneNumber: string | null
-  isVerified: boolean
   createdAt: string
   _count?: {
     venues: number
@@ -32,9 +31,9 @@ interface OwnerState {
   fetchOwners: () => Promise<void>
   fetchOwnerDetails: (id: string) => Promise<void>
   fetchOwnerPerformance: (id: string) => Promise<void>
+  createOwner: (data: any) => Promise<void>
   updateOwner: (id: string, data: any) => Promise<void>
   resetOwnerPassword: (id: string, newPassword: string) => Promise<void>
-  toggleOwnerVerification: (id: string, currentStatus: boolean) => Promise<void>
   deleteOwner: (id: string) => Promise<void>
 }
 
@@ -52,6 +51,17 @@ const useOwnerStore = create<OwnerState>((set, get) => ({
       set({ owners: response.data.owners, isLoading: false })
     } catch (err: any) {
       set({ error: err.response?.data?.error || "Failed to fetch owners", isLoading: false })
+    }
+  },
+
+  createOwner: async (data: any) => {
+    set({ isLoading: true, error: null })
+    try {
+      await axiosInstance.post('/api/owners', data)
+      get().fetchOwners()
+    } catch (err: any) {
+      set({ error: err.response?.data?.error || "Failed to create owner", isLoading: false })
+      throw err
     }
   },
 
@@ -94,10 +104,6 @@ const useOwnerStore = create<OwnerState>((set, get) => ({
 
   resetOwnerPassword: async (id: string, newPassword: string) => {
     return get().updateOwner(id, { newPassword })
-  },
-
-  toggleOwnerVerification: async (id: string, currentStatus: boolean) => {
-    return get().updateOwner(id, { isVerified: !currentStatus })
   },
 
   deleteOwner: async (id: string) => {
