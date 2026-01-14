@@ -63,7 +63,7 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@futsal.com"
+                  placeholder="Enter Email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
