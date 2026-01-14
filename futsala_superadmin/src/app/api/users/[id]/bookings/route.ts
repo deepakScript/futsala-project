@@ -3,12 +3,13 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const bookings = await prisma.booking.findMany({
       where: {
-        userId: params.id,
+        userId: id,
       },
       include: {
         court: {

@@ -9,12 +9,9 @@ import {
   Mail, 
   Calendar, 
   TrendingUp, 
-  DollarSign,
   Star,
   Shield,
   Clock,
-  CheckCircle2,
-  XCircle
 } from "lucide-react"
 import { 
   Card, 
@@ -55,7 +52,7 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
   }, [id, fetchVenueDetails, fetchVenueStats])
 
   if (isLoading && !selectedVenue) {
-    return <div className="flex h-[400px] items-center justify-center">Loading...</div>
+    return <div className="flex h-100 items-center justify-center">Loading...</div>
   }
 
   if (!selectedVenue) return null
@@ -90,7 +87,7 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
       </div>
 
       <Tabs defaultValue="details" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 max-w-[400px]">
+        <TabsList className="grid w-full grid-cols-3 max-w-100">
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="bookings">Bookings</TabsTrigger>
           <TabsTrigger value="earnings">Earnings</TabsTrigger>

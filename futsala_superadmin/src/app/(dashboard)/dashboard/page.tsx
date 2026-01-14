@@ -24,7 +24,7 @@ export default function DashboardPage() {
 
   if (isLoading && !metrics) {
     return (
-      <div className="flex h-[400px] items-center justify-center">
+      <div className="flex h-100 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="ml-2">Loading dashboard data...</span>
       </div>
@@ -33,7 +33,7 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="flex h-[400px] items-center justify-center text-red-500">
+      <div className="flex h-100 items-center justify-center text-red-500">
         Error: {error}
       </div>
     )

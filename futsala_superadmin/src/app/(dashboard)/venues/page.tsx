@@ -12,15 +12,11 @@ import {
   Trash2,
   MapPin,
   Calendar,
-  Users,
   Loader2
 } from "lucide-react"
 import { 
   Card, 
   CardContent, 
-  CardHeader, 
-  CardTitle,
-  CardDescription
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -118,7 +114,7 @@ export default function VenuesPage() {
               <Plus className="h-4 w-4" /> Add New Venue
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-106.25">
             <form onSubmit={handleCreateVenue}>
               <DialogHeader>
                 <DialogTitle>Add New Venue</DialogTitle>
@@ -215,7 +211,7 @@ export default function VenuesPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Tabs defaultValue="all" className="w-[400px]" onValueChange={setFilterStatus}>
+        <Tabs defaultValue="all" className="w-100" onValueChange={setFilterStatus}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="active">Active</TabsTrigger>
@@ -275,7 +271,7 @@ export default function VenuesPage() {
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-[180px]">
+                      <DropdownMenuContent align="end" className="w-45">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>

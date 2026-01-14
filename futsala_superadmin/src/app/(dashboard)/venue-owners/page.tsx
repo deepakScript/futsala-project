@@ -4,9 +4,7 @@ import { useEffect, useState } from "react"
 import { 
   Users, 
   Search, 
-  MoreHorizontal, 
-  ShieldCheck, 
-  ShieldAlert, 
+  MoreHorizontal,  
   Key, 
   BarChart3, 
   Trash2,
@@ -60,7 +58,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import useOwnerStore from "@/store/useOwnerStore"
 import { format } from "date-fns"
 
@@ -227,7 +224,7 @@ export default function VenueOwnersPage() {
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-[200px]">
+                      <DropdownMenuContent align="end" className="w-50">
                         <DropdownMenuLabel>Owner Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => handleViewPerformance(owner.id)} className="cursor-pointer gap-2">
@@ -255,7 +252,7 @@ export default function VenueOwnersPage() {
 
       {/* Password Reset Dialog */}
       <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-100">
           <DialogHeader>
             <DialogTitle>Reset Password</DialogTitle>
             <DialogDescription>
@@ -286,7 +283,7 @@ export default function VenueOwnersPage() {
 
       {/* Performance Sheet */}
       <Sheet open={isPerfSheetOpen} onOpenChange={setIsPerfSheetOpen}>
-        <SheetContent className="sm:max-w-[540px] overflow-y-auto">
+        <SheetContent className="sm:max-w-135 overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Owner Performance</SheetTitle>
             <SheetDescription>
@@ -364,7 +361,7 @@ export default function VenueOwnersPage() {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-[400px]">
+            <div className="flex items-center justify-center h-100">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           )}
@@ -372,7 +369,7 @@ export default function VenueOwnersPage() {
       </Sheet>
       {/* Add Owner Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[450px]">
+        <DialogContent className="sm:max-w-112.5">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-bold text-xl">
               <UserPlus className="h-5 w-5 text-primary" />

@@ -3,8 +3,9 @@ import { prisma } from '@/lib/prisma';
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const body = await request.json();
     // Allow both isVerified or isActive (common for status updates) to control the account status
@@ -19,7 +20,7 @@ export async function PATCH(
 
     const user = await prisma.user.update({
       where: {
-        id: params.id,
+        id: id,
       },
       data: {
         isVerified,
