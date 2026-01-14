@@ -1,12 +1,162 @@
-// Prisma Schema for Futsal Booking App
-// Database: PostgreSQL
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  password            String
+  fullName            String
+  phoneNumber         String
+  role                UserRole             @default(CUSTOMER)
+  isVerified          Boolean              @default(false)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  bookings            Booking[]
+  notifications       Notification[]
+  passwordResetTokens PasswordResetToken[]
+  reviews             Review[]
+  venues              Venue[]
+
+  @@map("users")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}
+
+model Venue {
+  id           String   @id @default(uuid())
+  name         String
+  description  String
+  address      String
+  city         String
+  latitude     Float?
+  longitude    Float?
+  phoneNumber  String
+  email        String?
+  images       String[]
+  amenities    String[]
+  isActive     Boolean  @default(true)
+  rating       Float    @default(0)
+  totalReviews Int      @default(0)
+  ownerId      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  courts       Court[]
+  reviews      Review[]
+  owner        User     @relation(fields: [ownerId], references: [id])
+
+  @@map("venues")
+}
+
+model Court {
+  id           String     @id @default(uuid())
+  name         String
+  venueId      String
+  courtType    String
+  surfaceType  String
+  isIndoor     Boolean    @default(false)
+  pricePerHour Float
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  bookings     Booking[]
+  venue        Venue      @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  timeSlots    TimeSlot[]
+
+  @@map("courts")
+}
+
+model TimeSlot {
+  id          String   @id @default(uuid())
+  courtId     String
+  startTime   String
+  endTime     String
+  dayOfWeek   Int
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  court       Court    @relation(fields: [courtId], references: [id], onDelete: Cascade)
+
+  @@unique([courtId, startTime, dayOfWeek])
+  @@map("time_slots")
+}
+
+model Booking {
+  id            String        @id @default(uuid())
+  userId        String
+  courtId       String
+  bookingDate   DateTime
+  startTime     String
+  endTime       String
+  totalHours    Float
+  totalPrice    Float
+  status        BookingStatus @default(PENDING)
+  paymentStatus PaymentStatus @default(PENDING)
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  court         Court         @relation(fields: [courtId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+  payment       Payment?
+
+  @@map("bookings")
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  bookingId     String        @unique
+  amount        Float
+  paymentMethod String
+  transactionId String?
+  status        PaymentStatus @default(PENDING)
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  booking       Booking       @relation(fields: [bookingId], references: [id])
+
+  @@map("payments")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  userId    String
+  venueId   String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+  venue     Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, venueId])
+  @@map("reviews")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
 }
 
 enum UserRole {
@@ -27,165 +177,4 @@ enum PaymentStatus {
   PAID
   FAILED
   REFUNDED
-}
-
-model User {
-  id            String        @id @default(uuid())
-  email         String        @unique
-  password      String
-  fullName      String
-  phoneNumber   String
-  role          UserRole      @default(CUSTOMER)
-  isVerified    Boolean       @default(false) @map("isActive")
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  
-  bookings      Booking[]
-  venues        Venue[]
-  reviews       Review[]
-  notifications Notification[]
-  passwordResetTokens PasswordResetToken[]
-  
-  @@map("users")
-}
-
-model PasswordResetToken {
-  id        String   @id @default(uuid())
-  token     String
-  userId    String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@map("password_reset_tokens")
-}
-
-model Venue {
-  id            String        @id @default(uuid())
-  name          String
-  description   String
-  address       String
-  city          String
-  latitude      Float?
-  longitude     Float?
-  phoneNumber   String
-  email         String?
-  images        String[]
-  amenities     String[]      // ["Parking", "Changing Room", "Cafeteria"]
-  isActive      Boolean       @default(true)
-  rating        Float         @default(0)
-  totalReviews  Int           @default(0)
-  ownerId       String
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  
-  owner         User          @relation(fields: [ownerId], references: [id])
-  courts        Court[]
-  reviews       Review[]
-  
-  @@map("venues")
-}
-
-model Court {
-  id            String        @id @default(uuid())
-  name          String        // "Court A", "Court B"
-  venueId       String
-  courtType     String        // "5-a-side", "7-a-side"
-  surfaceType   String        // "Artificial Turf", "Natural Grass"
-  isIndoor      Boolean       @default(false)
-  pricePerHour  Float
-  isActive      Boolean       @default(true)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  
-  venue         Venue         @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  timeSlots     TimeSlot[]
-  bookings      Booking[]
-  
-  @@map("courts")
-}
-
-model TimeSlot {
-  id            String        @id @default(uuid())
-  courtId       String
-  startTime     String        // "08:00"
-  endTime       String        // "09:00"
-  dayOfWeek     Int           // 0-6 (Sunday-Saturday)
-  isAvailable   Boolean       @default(true)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  
-  court         Court         @relation(fields: [courtId], references: [id], onDelete: Cascade)
-  
-  @@unique([courtId, startTime, dayOfWeek])
-  @@map("time_slots")
-}
-
-model Booking {
-  id              String          @id @default(uuid())
-  userId          String
-  courtId         String
-  bookingDate     DateTime
-  startTime       String
-  endTime         String
-  totalHours      Float
-  totalPrice      Float
-  status          BookingStatus   @default(PENDING)
-  paymentStatus   PaymentStatus   @default(PENDING)
-  notes           String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  
-  user            User            @relation(fields: [userId], references: [id])
-  court           Court           @relation(fields: [courtId], references: [id])
-  payment         Payment?
-  
-  @@map("bookings")
-}
-
-model Payment {
-  id              String          @id @default(uuid())
-  bookingId       String          @unique
-  amount          Float
-  paymentMethod   String          // "Khalti", "eSewa", "Card", "Cash"
-  transactionId   String?
-  status          PaymentStatus   @default(PENDING)
-  paidAt          DateTime?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  
-  booking         Booking         @relation(fields: [bookingId], references: [id])
-  
-  @@map("payments")
-}
-
-model Review {
-  id          String    @id @default(uuid())
-  userId      String
-  venueId     String
-  rating      Int       // 1-5
-  comment     String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  user        User      @relation(fields: [userId], references: [id])
-  venue       Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  
-  @@unique([userId, venueId])
-  @@map("reviews")
-}
-
-model Notification {
-  id          String    @id @default(uuid())
-  userId      String
-  title       String
-  message     String
-  type        String    // "BOOKING", "PAYMENT", "REMINDER"
-  isRead      Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  
-  user        User      @relation(fields: [userId], references: [id])
-  
-  @@map("notifications")
 }

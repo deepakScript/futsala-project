@@ -1,4 +1,0 @@
-﻿src/app/api/admins/[id]/route.ts(35,9): error TS2353: Object literal may only specify known properties, and 'isActive' does not exist in type 'UserSelect<DefaultArgs>'.
-src/app/api/admins/route.ts(17,9): error TS2353: Object literal may only specify known properties, and 'isActive' does not exist in type 'UserSelect<DefaultArgs>'.
-src/app/api/admins/route.ts(70,9): error TS2353: Object literal may only specify known properties, and 'isActive' does not exist in type '(Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput)'.
-src/app/api/admins/route.ts(77,9): error TS2353: Object literal may only specify known properties, and 'isActive' does not exist in type 'UserSelect<DefaultArgs>'.
