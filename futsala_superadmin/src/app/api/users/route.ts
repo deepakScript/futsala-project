@@ -24,7 +24,7 @@ export async function GET() {
       fullName: user.fullName,
       email: user.email,
       phoneNumber: user.phoneNumber,
-      isActive: user.isActive,
+      isVerified: user.isVerified,
       createdAt: user.createdAt,
       totalBookings: user._count.bookings,
     }));
