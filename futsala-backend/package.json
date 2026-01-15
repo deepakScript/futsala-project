@@ -14,7 +14,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@prisma/client": "^6.18.0",
+    "@prisma/client": "^7.2.0",
     "@types/pg": "^8.15.6",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
@@ -39,7 +39,7 @@
     "@types/nodemailer": "^7.0.3",
     "nodemon": "^3.1.10",
     "prisma": "^6.19.0",
-    "ts-node": "^10.9.2",
+    "ts-node": "^1.7.1",
     "typescript": "^5.9.3"
   }
 }
