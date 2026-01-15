@@ -92,6 +92,9 @@ model Court {
   venueId       String
   pricePerHour  Float
   isActive      Boolean       @default(true)
+  courtType     String?       // "5-a-side", "7-a-side"
+  surfaceType   String?       // "Artificial Grass", "Natural Grass", "Hard"
+  isIndoor      Boolean       @default(false)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   venue         Venue         @relation(fields: [venueId], references: [id], onDelete: Cascade)

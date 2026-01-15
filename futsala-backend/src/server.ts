@@ -65,16 +65,19 @@ app.use((err: any, req: Request, res: Response, next: any) => {
 });
 
 const PORT = process.env.PORT ?? 5000;
-const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+if (process.env.NODE_ENV !== "production") {
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
 
 // Global unhandled promise rejection handler
 process.on("unhandledRejection", (reason, promise) => {
   console.error("Unhandled Rejection at:", promise, "reason:", reason);
-  // Optional: Gracefully shutdown or just log
 });
 
 // Global uncaught exception handler
 process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception:", err);
-  // Optional: process.exit(1) if you want it to restart, but better to log first
 });
+
+export default app;
