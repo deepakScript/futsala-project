@@ -1,6 +1,4 @@
 'use client';
-
-import BackButton from '@/components/BackButton';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import axios, { isAxiosError } from '@/lib/axios';
 import { useAuthStore } from '@/lib/store/auth-store';
+import { toast } from 'sonner';
 
 const formSchema = z.object({
   email: z
@@ -61,27 +60,26 @@ const LoginForm = () => {
         router.refresh();
       }
     } catch (error: unknown) {
-      console.error('Login error', error);
       const message = isAxiosError(error) && error.response?.data?.message 
         ? error.response.data.message 
         : 'Something went wrong';
-      alert(message);
+      toast.error(message);
     }
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Login</CardTitle>
-        <CardDescription>
-          Log into your account with your credentials
+    <Card className='shadow-xl border-t-4 border-t-primary'>
+      <CardHeader className='space-y-1 pb-6'>
+        <CardTitle className='text-3xl font-bold tracking-tight'>Sign in</CardTitle>
+        <CardDescription className='text-base'>
+          Enter your email and password to access the venue owner dashboard
         </CardDescription>
       </CardHeader>
-      <CardContent className='space-y-2'>
+      <CardContent className='pb-8'>
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSubmit)}
-            className='space-y-6'
+            className='space-y-5'
           >
             <FormField
               control={form.control}
@@ -89,13 +87,13 @@ const LoginForm = () => {
               
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className='uppercase text-xs font-bold text-zinc-500 dark:text-white'>
-                    Email
+                  <FormLabel className='text-sm font-semibold text-foreground'>
+                    Email Address
                   </FormLabel>
                   <FormControl>
                     <Input
-                      className='bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0'
-                      placeholder='Enter Email'
+                      className='h-11 bg-muted/50 border-input transition-all focus:bg-background'
+                      placeholder='name@example.com'
                       autoComplete='email'
                       {...field}
                     />
@@ -104,20 +102,22 @@ const LoginForm = () => {
                 </FormItem>
               )}
             />
-
+ 
             <FormField
               control={form.control}
               name='password'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className='uppercase text-xs font-bold text-zinc-500 dark:text-white'>
-                    Password
-                  </FormLabel>
+                  <div className='flex items-center justify-between'>
+                    <FormLabel className='text-sm font-semibold text-foreground'>
+                      Password
+                    </FormLabel>
+                  </div>
                   <FormControl>
                     <Input
                       type='password'
-                      className='bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0'
-                      placeholder='Enter Password'
+                      className='h-11 bg-muted/50 border-input transition-all focus:bg-background'
+                      placeholder='Enter your password'
                       autoComplete='current-password'
                       {...field}
                     />
@@ -126,8 +126,10 @@ const LoginForm = () => {
                 </FormItem>
               )}
             />
-
-            <Button className='w-full'>Sign In</Button>
+ 
+            <Button className='w-full h-11 text-base font-medium shadow-sm hover:shadow-md transition-all' type='submit'>
+              Continue to Dashboard
+            </Button>
           </form>
         </Form>
       </CardContent>

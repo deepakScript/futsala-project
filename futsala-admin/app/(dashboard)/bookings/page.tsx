@@ -74,7 +74,6 @@ export default function BookingPage() {
       setIsDetailsOpen(false);
       fetchBookings();
     } catch (error: unknown) {
-      console.error('Update status error', error);
       const message = isAxiosError(error) && error.response?.data?.message 
         ? error.response.data.message 
         : 'Something went wrong';

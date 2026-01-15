@@ -36,17 +36,17 @@ export const MENU_ITEMS: MenuGroup[] = [
       {
         title: 'Bookings',
         icon: CalendarRange,
-        href: 'bookings',
+        href: '/bookings',
       },
       {
         title: 'Venue Management',
         icon: Building2,
-        href: 'venues',
+        href: '/venues',
       },
       {
         title: 'Time Slots',
         icon: Clock,
-        href: 'time-slots',
+        href: '/time-slots',
       },
     ],
   },
@@ -56,22 +56,22 @@ export const MENU_ITEMS: MenuGroup[] = [
       {
         title: 'Earnings',
         icon: DollarSign,
-        href: 'earnings',
+        href: '/earnings',
       },
       {
         title: 'Customers',
         icon: Users,
-        href: 'customers',
+        href: '/customers',
       },
       {
         title: 'Reviews',
         icon: Star,
-        href: 'reviews',
+        href: '/reviews',
       },
       {
         title: 'Offers',
         icon: Percent,
-        href: 'offers',
+        href: '/offers',
       },
     ],
   },
@@ -81,17 +81,17 @@ export const MENU_ITEMS: MenuGroup[] = [
       {
         title: 'Settings',
         icon: Settings,
-        href: 'settings',
+        href: '/settings',
       },
       {
         title: 'Profile',
         icon: User,
-        href: 'profile',
+        href: '/profile',
       },
       {
         title: 'Billing',
         icon: CreditCard,
-        href: 'billing',
+        href: '/billing',
       },
     ],
   },

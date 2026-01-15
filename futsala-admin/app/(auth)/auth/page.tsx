@@ -1,10 +1,12 @@
-import AuthTabs from '@/components/auth/AuthTabs';
+import LoginForm from '@/components/auth/LoginForm';
 
 const AuthPage = () => {
   return (
-    <>
-      <AuthTabs />
-    </>
+    <div className='flex items-center justify-center min-h-[90vh] w-full px-4'>
+      <div className='w-full max-w-lg'>
+        <LoginForm />
+      </div>
+    </div>
   );
 };
 

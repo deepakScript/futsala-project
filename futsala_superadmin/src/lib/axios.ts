@@ -1,10 +1,13 @@
 import axios from 'axios'
 
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+  baseURL: typeof window === 'undefined' 
+    ? (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000') 
+    : '',
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 })
 
 // Add interceptors if needed (e.g., for auth tokens)

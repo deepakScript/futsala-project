@@ -11,6 +11,7 @@ import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import axios from '@/lib/axios';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface DashboardData {
   summary: {
@@ -43,7 +44,7 @@ export default function DashboardPage() {
         const response = await axios.get('/dashboard/stats');
         setData(response.data);
       } catch (error) {
-        console.error('Failed to fetch dashboard data', error);
+        toast.error('Failed to fetch dashboard data');
       } finally {
         setLoading(false);
       }

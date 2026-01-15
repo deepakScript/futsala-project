@@ -15,6 +15,7 @@ import ThemeToggler from '@/components/ui/ThemeToggler';
 import axios from '@/lib/axios';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 const Navbar = () => {
   const router = useRouter();
@@ -35,7 +36,7 @@ const Navbar = () => {
       router.push('/auth');
       router.refresh();
     } catch (error) {
-      console.error('Logout error', error);
+      toast.error('Failed to logout');
     }
   };
 
