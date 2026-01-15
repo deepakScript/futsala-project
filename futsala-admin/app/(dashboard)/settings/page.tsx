@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import axios from '@/lib/axios';
+import axios, { isAxiosError } from '@/lib/axios';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -112,7 +112,10 @@ export default function SettingsPage() {
       toast.success('Password changed successfully');
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (error) {
-      const message = (error as any).response?.data?.message || 'Failed to change password';
+      let message = 'Failed to change password';
+      if (isAxiosError(error) && error.response?.data?.message) {
+        message = error.response.data.message;
+      }
       toast.error(message);
     } finally {
       setSaving(false);
@@ -319,7 +322,7 @@ export default function SettingsPage() {
                 Verification Status
               </CardTitle>
               <CardDescription>
-                Details about your venue's verification status on the platform.
+                Details about your venue&apos;s verification status on the platform.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">

@@ -18,14 +18,15 @@ export async function GET() {
         envCheck: process.env.DATABASE_URL ? 'PRESENT' : 'MISSING'
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { message?: string; code?: string; meta?: unknown };
     console.error('Database connection test failed:', error);
     return NextResponse.json({
       status: 'error',
       message: 'Database connection failed',
-      error: error.message,
-      code: error.code,
-      meta: error.meta,
+      error: err.message,
+      code: err.code,
+      meta: err.meta,
       envCheck: process.env.DATABASE_URL ? 'PRESENT' : 'MISSING'
     }, { status: 500 });
   }

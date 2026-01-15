@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import axios from '@/lib/axios';
+import axios, { isAxiosError } from '@/lib/axios';
 import BookingStats from '@/components/bookings/BookingStats';
 import BookingTable from '@/components/bookings/BookingTable';
 import BookingCalendar from '@/components/bookings/BookingCalendar';
@@ -53,7 +53,11 @@ export default function BookingPage() {
       const response = await axios.get('/bookings');
       setData(response.data);
     } catch (error) {
-      toast.error('Failed to fetch bookings');
+      let message = 'Failed to fetch bookings';
+      if (isAxiosError(error) && error.response?.data?.message) {
+        message = error.response.data.message;
+      }
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -69,12 +73,16 @@ export default function BookingPage() {
       toast.success(`Booking ${status.toLowerCase()} successfully`);
       setIsDetailsOpen(false);
       fetchBookings();
-    } catch (error) {
-      toast.error('Failed to update status');
+    } catch (error: unknown) {
+      console.error('Update status error', error);
+      const message = isAxiosError(error) && error.response?.data?.message 
+        ? error.response.data.message 
+        : 'Something went wrong';
+      toast.error(message);
     }
   };
 
-  const openDetails = (booking: any) => {
+  const openDetails = (booking: Booking) => {
     setSelectedBooking(booking);
     setIsDetailsOpen(true);
   };

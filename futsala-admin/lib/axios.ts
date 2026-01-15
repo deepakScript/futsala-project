@@ -20,4 +20,5 @@ axiosInstance.interceptors.request.use(
   }
 );
 
+export const isAxiosError = axios.isAxiosError;
 export default axiosInstance;

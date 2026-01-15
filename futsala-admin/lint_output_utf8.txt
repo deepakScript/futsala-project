@@ -1,0 +1,63 @@
+
+> futsala-admin@0.1.0 lint
+> eslint
+
+
+D:\Project IV\futsala-project\futsala-admin\app\(dashboard)\bookings\page.tsx
+  55:14  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  72:14  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  77:33  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Project IV\futsala-project\futsala-admin\app\(dashboard)\earnings\page.tsx
+  15:3   warning  'Filter' is defined but never used          @typescript-eslint/no-unused-vars
+  16:3   warning  'ArrowUpRight' is defined but never used    @typescript-eslint/no-unused-vars
+  17:3   warning  'ArrowDownRight' is defined but never used  @typescript-eslint/no-unused-vars
+  75:14  warning  'error' is defined but never used           @typescript-eslint/no-unused-vars
+
+D:\Project IV\futsala-project\futsala-admin\app\(dashboard)\settings\page.tsx
+   74:14  warning  'error' is defined but never used                                @typescript-eslint/no-unused-vars
+   92:14  warning  'error' is defined but never used                                @typescript-eslint/no-unused-vars
+  115:33  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  322:41  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+D:\Project IV\futsala-project\futsala-admin\app\(dashboard)\time-slots\page.tsx
+    5:52  warning  'CardDescription' is defined but never used                                                                     @typescript-eslint/no-unused-vars
+    8:10  warning  'Badge' is defined but never used                                                                               @typescript-eslint/no-unused-vars
+   10:3   warning  'Clock' is defined but never used                                                                               @typescript-eslint/no-unused-vars
+   13:3   warning  'X' is defined but never used                                                                                   @typescript-eslint/no-unused-vars
+   15:3   warning  'ChevronDown' is defined but never used                                                                         @typescript-eslint/no-unused-vars
+   76:14  warning  'error' is defined but never used                                                                               @typescript-eslint/no-unused-vars
+  110:6   warning  React Hook useEffect has a missing dependency: 'fetchCourts'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  156:14  warning  'error' is defined but never used                                                                               @typescript-eslint/no-unused-vars
+
+D:\Project IV\futsala-project\futsala-admin\app\(dashboard)\venues\page.tsx
+   62:14  warning  'error' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+   81:14  warning  'error' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+  116:14  warning  'error' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+  299:23  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Project IV\futsala-project\futsala-admin\app\api\auth\login\route.ts
+  36:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Project IV\futsala-project\futsala-admin\app\api\test-db\route.ts
+  21:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Project IV\futsala-project\futsala-admin\components\auth\LoginForm.tsx
+   3:8   warning  'BackButton' is defined but never used    @typescript-eslint/no-unused-vars
+  63:21  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Project IV\futsala-project\futsala-admin\components\auth\RegisterForm.tsx
+   3:8   warning  'BackButton' is defined but never used    @typescript-eslint/no-unused-vars
+  85:21  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Project IV\futsala-project\futsala-admin\components\ui\command.tsx
+  26:11  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+D:\Project IV\futsala-project\futsala-admin\components\ui\sidebar.tsx
+  30:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Project IV\futsala-project\futsala-admin\lib\auth.ts
+  12:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 32 problems (7 errors, 25 warnings)
+

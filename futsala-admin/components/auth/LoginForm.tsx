@@ -22,7 +22,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import axios from '@/lib/axios';
+import axios, { isAxiosError } from '@/lib/axios';
 import { useAuthStore } from '@/lib/store/auth-store';
 
 const formSchema = z.object({
@@ -60,9 +60,12 @@ const LoginForm = () => {
         router.push('/dashboard');
         router.refresh();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error', error);
-      alert(error.response?.data?.message || 'Something went wrong');
+      const message = isAxiosError(error) && error.response?.data?.message 
+        ? error.response.data.message 
+        : 'Something went wrong';
+      alert(message);
     }
   };
 
