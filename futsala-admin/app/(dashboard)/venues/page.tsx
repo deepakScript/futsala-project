@@ -21,11 +21,9 @@ import {
 import { toast } from 'sonner';
 
 interface Court {
-  id: string;
+  id?: string;
   name: string;
   pricePerHour: number;
-  courtType: string;
-  surfaceType: string;
 }
 
 interface Venue {
@@ -125,6 +123,25 @@ export default function VenuePage() {
       ...venue,
       images: venue.images.filter(img => img !== imageUrl)
     });
+  };
+
+  const addCourt = () => {
+    if (!venue) return;
+    const newCourt: Court = {
+      name: `Court ${venue.courts.length + 1}`,
+      pricePerHour: 1000,
+    };
+    setVenue({
+      ...venue,
+      courts: [...venue.courts, newCourt]
+    });
+  };
+
+  const removeCourt = (index: number) => {
+    if (!venue) return;
+    const newCourts = [...venue.courts];
+    newCourts.splice(index, 1);
+    setVenue({ ...venue, courts: newCourts });
   };
 
   if (loading) {
@@ -243,18 +260,30 @@ export default function VenuePage() {
 
           {/* Court Settings */}
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Court Pricing & Details</CardTitle>
+              <Button size="sm" variant="outline" onClick={addCourt}>
+                <Plus className="h-4 w-4 mr-1" />
+                Add Court
+              </Button>
             </CardHeader>
             <CardContent className="space-y-6">
               {venue.courts.map((court, index) => (
-                <div key={court.id || index} className="p-4 border rounded-lg space-y-4">
+                <div key={court.id || `new-${index}`} className="p-4 border rounded-lg space-y-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-sm">{court.name || `Court ${index + 1}`}</h4>
-                    <Badge>Active</Badge>
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="grid gap-2">
+                    <div className="grid gap-1 flex-1 mr-4">
+                      <Label className="text-xs">Court Name</Label>
+                      <Input 
+                        value={court.name} 
+                        onChange={(e) => {
+                          const newCourts = [...venue.courts];
+                          newCourts[index].name = e.target.value;
+                          setVenue({...venue, courts: newCourts});
+                        }}
+                        placeholder="e.g. Court A"
+                      />
+                    </div>
+                    <div className="grid gap-1 w-32">
                       <Label className="text-xs">Price Per Hour (Rs.)</Label>
                       <Input 
                         type="number"
@@ -266,21 +295,24 @@ export default function VenuePage() {
                         }}
                       />
                     </div>
-                    <div className="grid gap-2">
-                      <Label className="text-xs">Ground Size / Type</Label>
-                      <Input 
-                        value={court.courtType} 
-                        placeholder="e.g. 5-a-side"
-                        onChange={(e) => {
-                          const newCourts = [...venue.courts];
-                          newCourts[index].courtType = e.target.value;
-                          setVenue({...venue, courts: newCourts});
-                        }}
-                      />
-                    </div>
+                    {!court.id && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="mt-5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => removeCourt(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
+              {venue.courts.length === 0 && (
+                <div className="text-center py-6 text-muted-foreground border border-dashed rounded-lg">
+                  No courts added yet. Click "Add Court" to begin.
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

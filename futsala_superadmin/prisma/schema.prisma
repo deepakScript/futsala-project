@@ -105,6 +105,7 @@ model Booking {
   totalPrice    Float
   status        BookingStatus @default(PENDING)
   paymentStatus PaymentStatus @default(PENDING)
+  otp           String?
   notes         String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt

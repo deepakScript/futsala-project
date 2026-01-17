@@ -12,6 +12,7 @@ interface Booking {
   totalPrice: number
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED'
   paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'
+  otp?: string | null
   notes: string | null
   createdAt: string
   user: {

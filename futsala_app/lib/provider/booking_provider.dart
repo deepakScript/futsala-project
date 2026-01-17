@@ -1,8 +1,11 @@
-import 'package:flutter/foundation.dart';
 import 'package:futsala_app/core/services/api_service.dart';
 import 'package:futsala_app/core/services/token_service.dart';
 import 'package:futsala_app/data/models/booking_model.dart';
 import 'package:futsala_app/data/models/timeslot_model.dart';
+import 'package:futsala_app/data/models/payment_model.dart';
+import 'package:khalti_checkout_flutter/khalti_checkout_flutter.dart';
+import 'package:flutter/material.dart';
+
 // Import your models
 // import 'package:futsala_app/models/booking.dart';
 // import 'package:futsala_app/models/time_slot.dart';
@@ -32,15 +35,41 @@ class BookingProvider extends ChangeNotifier {
   Booking? get selectedBooking => _selectedBooking;
 
   // Filtered bookings by status
-  List<Booking> get upcomingBookings => _myBookings
-      .where((b) => b.status == 'confirmed' || b.status == 'pending')
-      .where((b) => b.bookingDate.isAfter(DateTime.now()))
-      .toList();
+  List<Booking> get upcomingBookings {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    
+    return _myBookings
+        .where((b) => b.status == 'confirmed' || b.status == 'pending')
+        .where((b) {
+          final bookingDay = DateTime(
+            b.bookingDate.year,
+            b.bookingDate.month,
+            b.bookingDate.day,
+          );
+          // Include today and future dates
+          return bookingDay.isAtSameMomentAs(today) || bookingDay.isAfter(today);
+        })
+        .toList();
+  }
 
-  List<Booking> get pastBookings => _myBookings
-      .where((b) => b.status == 'completed' || 
-                    b.bookingDate.isBefore(DateTime.now()))
-      .toList();
+  List<Booking> get pastBookings {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    
+    return _myBookings
+        .where((b) => b.status != 'cancelled') // Exclude cancelled
+        .where((b) {
+          final bookingDay = DateTime(
+            b.bookingDate.year,
+            b.bookingDate.month,
+            b.bookingDate.day,
+          );
+          // Only past dates (before today)
+          return bookingDay.isBefore(today);
+        })
+        .toList();
+  }
 
   List<Booking> get cancelledBookings =>
       _myBookings.where((b) => b.status == 'cancelled').toList();
@@ -50,7 +79,6 @@ class BookingProvider extends ChangeNotifier {
   /// ======================
   Future<void> _loadToken() async {
     _token ??= await AuthStorage.getToken();
-    print('BookingProvider: Loaded token: ${_token != null ? "Found" : "Not Found"}');
   }
 
   /// ======================
@@ -247,10 +275,10 @@ class BookingProvider extends ChangeNotifier {
   }
 
   /// ======================
-  /// CANCEL BOOKING
+  /// CANCEL BOOKING WITH REFUND
   /// PUT /cancel/:id
   /// ======================
-  Future<bool> cancelBooking(String id) async {
+  Future<Map<String, dynamic>> cancelBooking(String id) async {
     _setLoading(true);
     _clearMessages();
 
@@ -263,25 +291,44 @@ class BookingProvider extends ChangeNotifier {
         body: {},
       );
 
+      // Calculate refund (95% of total price - 5% cancellation fee)
+      final booking = _myBookings.firstWhere((b) => b.id == id);
+      final refundAmount = booking.totalPrice * 0.95;
+      final cancellationFee = booking.totalPrice * 0.05;
+
       // Update local booking status
       final index = _myBookings.indexWhere((b) => b.id == id);
       if (index != -1) {
         _myBookings[index] = _myBookings[index].copyWith(
           status: 'cancelled',
           updatedAt: DateTime.now(),
+          refundAmount: refundAmount,
+          refundStatus: 'pending',
         );
       }
 
       if (_selectedBooking?.id == id) {
-        _selectedBooking = _selectedBooking!.copyWith(status: 'cancelled');
+        _selectedBooking = _selectedBooking!.copyWith(
+          status: 'cancelled',
+          refundAmount: refundAmount,
+          refundStatus: 'pending',
+        );
       }
 
-      _setSuccess('Booking cancelled successfully');
+      _setSuccess('Booking cancelled successfully. Refund of Rs. ${refundAmount.toInt()} will be processed.');
       notifyListeners();
-      return true;
+      
+      return {
+        'success': true,
+        'refundAmount': refundAmount,
+        'cancellationFee': cancellationFee,
+      };
     } catch (e) {
       _setError(e.toString());
-      return false;
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
     } finally {
       _setLoading(false);
     }
@@ -332,6 +379,104 @@ class BookingProvider extends ChangeNotifier {
       return false;
     } finally {
       _setLoading(false);
+    }
+  }
+
+  /// ======================
+  /// PAYMENT (Khalti)
+  /// ======================
+  Future<void> payWithKhalti(BuildContext context, String bookingId, {VoidCallback? onSuccess}) async {
+    _setLoading(true);
+    _clearMessages();
+
+    try {
+      await _loadToken();
+      final response = await ApiService.post(
+        endpoint: '/payments/initiate',
+        token: _token,
+        body: {
+          'bookingId': bookingId,
+        },
+      );
+
+      if (response['success'] == true) {
+        final payment = PaymentModel.fromJson(response['data']);
+        
+        if (payment.pidx == null) {
+          _setError('Failed to get payment identifier (pidx)');
+          return;
+        }
+
+        // Start Khalti Checkout SDK
+        final payConfig = KhaltiPayConfig(
+          publicKey: '13ccdf07dae9496e8e54e79d59f15b38',
+          pidx: payment.pidx!,
+          environment: Environment.test,
+        );
+
+        // Initialize Khalti SDK
+        final khalti = await Khalti.init(
+          enableDebugging: true,
+          payConfig: payConfig,
+          onPaymentResult: (paymentResult, khalti) async {
+            final pidx = paymentResult.payload?.pidx;
+            if (pidx != null) {
+              final verified = await verifyPayment(pidx);
+              if (verified && context.mounted) {
+                _setSuccess('Payment successful and verified!');
+                if (onSuccess != null) {
+                  onSuccess();
+                } else {
+                  Navigator.pop(context); // Default behavior
+                }
+              }
+            }
+          },
+          onMessage: (khalti, {description, statusCode, event, needsPaymentConfirmation}) {
+            _setError(description?.toString() ?? 'An error occurred during payment');
+          },
+          onReturn: () {
+          },
+        );
+
+        if (context.mounted) {
+          khalti.open(context);
+        }
+      } else {
+        _setError(response['message'] ?? 'Failed to initiate payment');
+      }
+    } catch (e) {
+      _setError(e.toString());
+    } finally {
+      // Don't disable loading here if we are waiting for payment result?
+      // Actually Khalti SDK opens a modal, so we can stop our local loading.
+      _setLoading(false);
+    }
+  }
+
+  Future<bool> verifyPayment(String pidx) async {
+    try {
+      await _loadToken();
+      final response = await ApiService.post(
+        endpoint: '/payments/verify',
+        token: _token,
+        body: {'pidx': pidx},
+      );
+
+      if (response['success'] == true) {
+        _setSuccess('Payment verified successfully');
+        
+        // Refresh booking if it was this one
+        // We can't easily know which booking it was unless we store it or refresh all
+        // Ideally we assume the caller will refresh bookings (onSuccess callback)
+        return true;
+      } else {
+        _setError(response['message'] ?? 'Payment verification failed');
+        return false;
+      }
+    } catch (e) {
+      _setError(e.toString());
+      return false;
     }
   }
 

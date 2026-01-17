@@ -38,7 +38,7 @@ class FutsalCard extends StatelessWidget {
                   backgroundColor: Colors.white,
                   child: Icon(
                     turf.isFavourite ? Icons.favorite : Icons.favorite_border,
-                    color: Colors.green,
+                    color: const Color(0xFF00C37A),
                   ),
                 ),
               ),
@@ -74,7 +74,7 @@ class FutsalCard extends StatelessWidget {
         /// RATING
         Row(
           children: [
-            const Icon(Icons.star, size: 18, color: Colors.green),
+            const Icon(Icons.star, size: 18, color: Color(0xFF00C37A)),
             const SizedBox(width: 4),
             Text("${turf.rating}", style: const TextStyle(fontSize: 14)),
           ],

@@ -59,7 +59,7 @@ export const getAllNotifications = async (req: AuthRequest, res: Response): Prom
 export const markAsRead = async (req: AuthRequest, res: Response): Promise<Response> => {
   try {
     const userId = req.user?.userId;
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     if (!userId) {
       return res.status(401).json({

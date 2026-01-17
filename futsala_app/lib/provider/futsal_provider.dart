@@ -52,7 +52,6 @@ class FutsalProvider extends ChangeNotifier {
       _setSuccess(response['message'] ?? 'Venues loaded successfully');
       _setLoading(false);
 
-      print('Loaded ${_venues.length} venues');
       
       return response;
     } catch (e) {
@@ -120,7 +119,6 @@ class FutsalProvider extends ChangeNotifier {
       _setSuccess(response['message'] ?? 'Search completed successfully');
       _setLoading(false);
 
-      print('Search found ${_searchResults.length} venues');
       
       return response;
     } catch (e) {
@@ -158,7 +156,6 @@ class FutsalProvider extends ChangeNotifier {
     _setSuccess(response['message'] ?? 'Venue loaded successfully');
     _setLoading(false);
 
-    print('Loaded venue: ${venue.name}');
 
     return venue; // ✅ RETURN MODEL
   } catch (e) {

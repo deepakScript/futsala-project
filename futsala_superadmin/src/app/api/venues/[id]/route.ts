@@ -48,11 +48,38 @@ export async function PATCH(
   try {
     const { id } = await params
     const data = await request.json()
+    const { courts, ...venueData } = data
 
+    // Update Venue
     const venue = await prisma.venue.update({
       where: { id },
-      data
+      data: venueData
     })
+
+    // Update/Create Courts
+    if (courts && Array.isArray(courts)) {
+      for (const court of courts) {
+        if (court.id) {
+          await prisma.court.update({
+            where: { id: court.id },
+            data: {
+              name: court.name,
+              pricePerHour: parseFloat(court.pricePerHour.toString()),
+            }
+          })
+        } else {
+          await prisma.court.create({
+            data: {
+              name: court.name,
+              pricePerHour: parseFloat(court.pricePerHour.toString()),
+              courtType: "Standard",
+              surfaceType: "Turf",
+              venueId: id
+            }
+          })
+        }
+      }
+    }
 
     return NextResponse.json({ venue })
   } catch (error) {

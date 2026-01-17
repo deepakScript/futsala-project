@@ -65,7 +65,7 @@ export async function PATCH(req: Request) {
       },
     });
 
-    // Update/Create Courts (Simplified)
+    // Update/Create Courts
     if (courts && Array.isArray(courts)) {
       for (const court of courts) {
         if (court.id) {
@@ -73,9 +73,15 @@ export async function PATCH(req: Request) {
             where: { id: court.id },
             data: {
               name: court.name,
-              pricePerHour: court.pricePerHour,
-              courtType: court.courtType,
-              surfaceType: court.surfaceType,
+              pricePerHour: parseFloat(court.pricePerHour.toString()),
+            },
+          });
+        } else {
+          await prisma.court.create({
+            data: {
+              name: court.name,
+              pricePerHour: parseFloat(court.pricePerHour.toString()),
+              venueId: id,
             },
           });
         }

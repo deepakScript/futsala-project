@@ -15,6 +15,9 @@ class Booking {
   final DateTime? updatedAt;
   final String? courtName;
   final String? format; // 'Box Cricket', '5-a-side', etc.
+  final String? otp; // 6-digit verification code
+  final double? refundAmount; // Amount refunded on cancellation
+  final String? refundStatus; // 'pending', 'processed', 'failed'
 
   Booking({
     required this.id,
@@ -33,6 +36,9 @@ class Booking {
     this.updatedAt,
     this.courtName,
     this.format,
+    this.otp,
+    this.refundAmount,
+    this.refundStatus,
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
@@ -43,16 +49,15 @@ class Booking {
                json['court']?.toString() ?? 
                json['court']?['id']?.toString() ?? '',
       futsalId: json['futsalId']?.toString() ?? 
-                json['futsal']?.toString() ?? 
+                json['court']?['venueId']?.toString() ??
                 json['court']?['venue']?['id']?.toString() ?? '',
       futsalName: json['futsalName']?.toString() ?? 
-                  json['futsal']?['name']?.toString() ?? 
-                  json['court']?['venue']?['name']?.toString() ?? '',
+                  json['court']?['venue']?['name']?.toString() ?? 
+                  json['futsal']?['name']?.toString() ?? '',
       location: json['location']?.toString() ?? 
-                json['futsal']?['location']?.toString() ?? 
-                json['futsal']?['address']?.toString() ?? 
                 json['court']?['venue']?['address']?.toString() ?? 
-                json['court']?['venue']?['city']?.toString() ?? '',
+                json['court']?['venue']?['city']?.toString() ?? 
+                json['futsal']?['address']?.toString() ?? '',
       bookingDate: json['bookingDate'] != null 
           ? DateTime.parse(json['bookingDate'].toString())
           : DateTime.now(),
@@ -61,7 +66,7 @@ class Booking {
       totalPrice: (json['totalPrice'] is int)
           ? (json['totalPrice'] as int).toDouble()
           : (json['totalPrice'] as double? ?? 0.0),
-      status: json['status']?.toString() ?? 'pending',
+      status: (json['status']?.toString() ?? 'pending').toLowerCase(),
       notes: json['notes']?.toString(),
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'].toString())
@@ -73,6 +78,13 @@ class Booking {
                  json['court']?['name']?.toString(),
       format: json['format']?.toString() ?? 
               json['court']?['format']?.toString(),
+      otp: json['otp']?.toString(),
+      refundAmount: json['refundAmount'] != null
+          ? (json['refundAmount'] is int
+              ? (json['refundAmount'] as int).toDouble()
+              : json['refundAmount'] as double)
+          : null,
+      refundStatus: json['refundStatus']?.toString(),
     );
   }
 
@@ -94,6 +106,9 @@ class Booking {
       if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
       if (courtName != null) 'courtName': courtName,
       if (format != null) 'format': format,
+      if (otp != null) 'otp': otp,
+      if (refundAmount != null) 'refundAmount': refundAmount,
+      if (refundStatus != null) 'refundStatus': refundStatus,
     };
   }
 
@@ -105,13 +120,15 @@ class Booking {
     if (status != 'confirmed' && status != 'pending') return false;
     
     final now = DateTime.now();
-    final bookingDateTime = DateTime(
+    final today = DateTime(now.year, now.month, now.day);
+    final bookingDay = DateTime(
       bookingDate.year,
       bookingDate.month,
       bookingDate.day,
     );
     
-    return bookingDateTime.isAfter(now);
+    // Can cancel if booking is today or in the future
+    return bookingDay.isAtSameMomentAs(today) || bookingDay.isAfter(today);
   }
 
   // Helper method to get formatted date
@@ -140,6 +157,9 @@ class Booking {
     DateTime? updatedAt,
     String? courtName,
     String? format,
+    String? otp,
+    double? refundAmount,
+    String? refundStatus,
   }) {
     return Booking(
       id: id ?? this.id,
@@ -158,6 +178,9 @@ class Booking {
       updatedAt: updatedAt ?? this.updatedAt,
       courtName: courtName ?? this.courtName,
       format: format ?? this.format,
+      otp: otp ?? this.otp,
+      refundAmount: refundAmount ?? this.refundAmount,
+      refundStatus: refundStatus ?? this.refundStatus,
     );
   }
 }

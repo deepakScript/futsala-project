@@ -62,7 +62,7 @@ export default function DashboardPage() {
     },
     {
       title: "Total Revenue (Platform)",
-      value: `Rs. ${metrics.totalRevenue.toLocaleString()}`,
+      value: `Nrs. ${metrics.totalRevenue.toLocaleString()}`,
       icon: DollarSign,
       description: "Total transaction volume",
     },
@@ -80,9 +80,9 @@ export default function DashboardPage() {
     },
     {
       title: "Platform Commission",
-      value: `Rs. ${metrics.platformCommission.toLocaleString()}`,
+      value: `Nrs. ${metrics.platformCommission.toLocaleString()}`,
       icon: DollarSign,
-      description: "10% of total revenue",
+      description: "2% of total revenue",
     },
   ]
 

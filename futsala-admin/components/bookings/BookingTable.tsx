@@ -29,6 +29,7 @@ interface Booking {
   status: string;
   totalPrice: number;
   paymentStatus: string;
+  otp?: string;
   user: {
     fullName: string;
     email: string;
@@ -55,7 +56,8 @@ export default function BookingTable({ bookings, onViewDetails }: BookingTablePr
     const matchesSearch = 
       booking.user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       booking.user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.court.name.toLowerCase().includes(searchTerm.toLowerCase());
+      booking.court.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (booking.otp && booking.otp.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesStatus = statusFilter === 'ALL' || booking.status === statusFilter;
 
@@ -113,7 +115,14 @@ export default function BookingTable({ bookings, onViewDetails }: BookingTablePr
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="font-medium">{booking.user.fullName}</span>
-                      <span className="text-xs text-muted-foreground">{booking.user.email}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">{booking.user.email}</span>
+                        {booking.otp && (
+                          <Badge variant="secondary" className="text-[10px] px-1 h-4">
+                            OTP: {booking.otp}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>

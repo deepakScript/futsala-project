@@ -1,10 +1,27 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+
 class ApiService {
-  // Change this to your backend URL
-  static const String baseUrl = 'http://127.0.0.1:5000/api/v1';
-  
+  // For local development, use your machine's IP address or 10.0.2.2 for Android emulators
+  // static const String localUrlWeb = 'http://localhost:5000/api/v1';
+  // static const String localUrlMobile = 'http://10.0.2.2:5000/api/v1';
+
+  static const String prodUrl =
+      'https://futsala-backend-testing.onrender.com/api/v1';
+
+  // Set this to true to use the local server
+  // static bool useLocal = false;
+
+  static String get baseUrl {
+    return prodUrl;
+    // if (!useLocal) return prodUrl;
+    // // Use 10.0.2.2 for Android, localhost for Web/Desktop
+    // return (defaultTargetPlatform == TargetPlatform.android && !kIsWeb)
+    //     ? localUrlMobile
+    //     : localUrlWeb;
+  }
+
   static const Duration timeoutDuration = Duration(seconds: 30);
 
   // POST request helper
@@ -21,11 +38,7 @@ class ApiService {
       };
 
       final response = await http
-          .post(
-            url,
-            headers: headers,
-            body: jsonEncode(body),
-          )
+          .post(url, headers: headers, body: jsonEncode(body))
           .timeout(timeoutDuration);
 
       return _handleResponse(response);
@@ -70,11 +83,7 @@ class ApiService {
       };
 
       final response = await http
-          .put(
-            url,
-            headers: headers,
-            body: jsonEncode(body),
-          )
+          .put(url, headers: headers, body: jsonEncode(body))
           .timeout(timeoutDuration);
 
       return _handleResponse(response);
@@ -97,11 +106,7 @@ class ApiService {
       };
 
       final response = await http
-          .patch(
-            url,
-            headers: headers,
-            body: jsonEncode(body),
-          )
+          .patch(url, headers: headers, body: jsonEncode(body))
           .timeout(timeoutDuration);
 
       return _handleResponse(response);
@@ -140,34 +145,53 @@ class ApiService {
   // Handle API response
   static Map<String, dynamic> _handleResponse(http.Response response) {
     try {
-      final data = jsonDecode(response.body);
+      if (response.body.isEmpty) {
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          return {'success': true, 'statusCode': response.statusCode};
+        } else {
+          throw ApiException(
+            message:
+                'Server returned empty response with status ${response.statusCode}',
+            statusCode: response.statusCode,
+          );
+        }
+      }
+
+      final dynamic decoded = jsonDecode(response.body);
+
+      // Handle cases where backend might return a List instead of an Object at root
+      Map<String, dynamic> data;
+      if (decoded is Map) {
+        data = Map<String, dynamic>.from(decoded);
+      } else {
+        data = {'data': decoded};
+      }
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        // Return data with success message if available
-        return {
-          ...data,
-          'success': true,
-          'statusCode': response.statusCode,
-        };
+        return {...data, 'success': true, 'statusCode': response.statusCode};
       } else {
-        // Extract error message from backend
-        String errorMessage = data['message'] ?? 
-                             data['error'] ?? 
-                             data['msg'] ?? 
-                             'Something went wrong';
-        
+        String errorMessage =
+            data['message'] ??
+            data['error'] ??
+            data['msg'] ??
+            'Something went wrong (Status ${response.statusCode})';
+
         throw ApiException(
           message: errorMessage,
           statusCode: response.statusCode,
-          errors: data['errors'], // For validation errors
+          errors: data['errors'],
         );
       }
     } catch (e) {
-      if (e is ApiException) {
-        rethrow;
-      }
+      if (e is ApiException) rethrow;
+
+      final bodySnippet = response.body.length > 200
+          ? '${response.body.substring(0, 200)}...'
+          : response.body;
+
       throw ApiException(
-        message: 'Failed to parse server response',
+        message:
+            'Failed to parse server response: ${e.toString()}\nStatus: ${response.statusCode}\nBody: $bodySnippet',
         statusCode: response.statusCode,
       );
     }
@@ -196,15 +220,11 @@ class ApiException implements Exception {
   final int statusCode;
   final dynamic errors; // For validation errors from backend
 
-  ApiException({
-    required this.message, 
-    required this.statusCode,
-    this.errors,
-  });
+  ApiException({required this.message, required this.statusCode, this.errors});
 
   @override
   String toString() => message;
-  
+
   // Get formatted error message
   String get formattedMessage {
     if (errors != null && errors is Map) {

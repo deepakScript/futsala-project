@@ -1,0 +1,20 @@
+# Build artifacts
+node_modules/
+dist/
+build/
+.dart_tool/
+.pub/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Android
+futsala_app/android/app/build/
+*.keystore
+*.jks
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -238,7 +238,7 @@ export default function UsersPage() {
                     </div>
                     <div>
                       <span className="text-muted-foreground">Amount:</span>{' '}
-                      Rs. {booking.totalPrice}
+                      Nrs. {booking.totalPrice}
                     </div>
                      <div>
                       <span className="text-muted-foreground">Payment:</span>{' '}

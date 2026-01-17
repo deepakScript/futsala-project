@@ -7,11 +7,13 @@ import 'package:futsala_app/data/models/venue_model.dart';
 class VenueCard extends StatefulWidget {
   final Venue venue;
   final VoidCallback onFavoriteTap;
+  final bool isFavorite;
 
   const VenueCard({
     super.key,
     required this.venue,
     required this.onFavoriteTap,
+    this.isFavorite = false,
   });
 
   @override
@@ -72,15 +74,16 @@ class _VenueCardState extends State<VenueCard> {
                                   ),
                                 );
                               },
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Container(
-                                  color: Colors.grey[200],
-                                  child: const Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                );
-                              },
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      color: Colors.grey[200],
+                                      child: const Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    );
+                                  },
                             );
                           },
                         )
@@ -106,11 +109,11 @@ class _VenueCardState extends State<VenueCard> {
                   child: CircleAvatar(
                     backgroundColor: Colors.white,
                     child: Icon(
-                      widget.venue.isFavorite
+                      widget.isFavorite
                           ? Icons.favorite
                           : Icons.favorite_border,
-                      color: widget.venue.isFavorite
-                          ? Colors.green
+                      color: widget.isFavorite
+                          ? const Color(0xFF00C37A)
                           : Colors.grey,
                     ),
                   ),
@@ -168,7 +171,11 @@ class _VenueCardState extends State<VenueCard> {
                     ),
                     Row(
                       children: [
-                        const Icon(Icons.star, color: Colors.green, size: 16),
+                        const Icon(
+                          Icons.star,
+                          color: Color(0xFF00C37A),
+                          size: 16,
+                        ),
                         const SizedBox(width: 4),
                         Text(widget.venue.rating.toString()),
                       ],
@@ -186,7 +193,10 @@ class _VenueCardState extends State<VenueCard> {
                     Expanded(
                       child: Text(
                         widget.venue.location,
-                        style: const TextStyle(color: Colors.grey, fontSize: 13),
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 13,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -204,9 +214,11 @@ class _VenueCardState extends State<VenueCard> {
                     children: widget.venue.amenities.map((sport) {
                       return Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: Colors.green.withValues(alpha: 0.1),
+                          color: const Color(0xFF00C37A).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(

@@ -55,7 +55,7 @@ class _AnimatedBottomNavigationBarState
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -118,7 +118,7 @@ class _AnimatedBottomNavigationBarState
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             decoration: BoxDecoration(
               color: isSelected
-                  ? Colors.blue.withOpacity(0.1)
+                  ? Colors.blue.withValues(alpha: 0.1)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
             ),

@@ -13,7 +13,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
       body: child,
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.green,
+        selectedItemColor: const Color(0xFF00C37A),
         unselectedItemColor: Colors.grey,
         currentIndex: _calculateSelectedIndex(context),
         onTap: (index) => _onItemTapped(index, context),
@@ -24,9 +24,9 @@ class ScaffoldWithNavBar extends StatelessWidget {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.sports_soccer_outlined),
-            activeIcon: Icon(Icons.sports_soccer),
-            label: 'Turf',
+            icon: Icon(Icons.search_outlined),
+            activeIcon: Icon(Icons.search),
+            label: 'Search',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.event_note_outlined),
@@ -64,7 +64,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
         context.go('/');
         break;
       case 1:
-        context.go('/turf');
+        context.go('/futsal');
         break;
       case 2:
         context.go('/booking');

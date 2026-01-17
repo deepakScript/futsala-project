@@ -2,6 +2,7 @@
 import { Request, Response } from 'express';
 import { BookingStatus } from '@prisma/client';
 import prisma from '../config/prismaClient';
+import crypto from 'crypto';
 
 
 // BookingStatus enum imported from prisma client
@@ -32,7 +33,7 @@ interface RescheduleBookingBody {
  */
 export const checkAvailability = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const futsalId = req.params.futsalId || req.query.futsalId as string;
+    const futsalId = (req.params.futsalId || req.query.futsalId) as string;
     const { date } = req.query as { date?: string };
     
     if (!futsalId) {
@@ -102,14 +103,14 @@ export const checkAvailability = async (req: Request, res: Response): Promise<Re
     });
 
     console.log(`[checkAvailability] Found ${courts.length} courts for venue ${futsalId}`);
-    courts.forEach(c => {
+    courts.forEach((c: any) => {
       console.log(`  Court: ${c.name}, Slots: ${c.timeSlots.length}, Bookings: ${c.bookings.length}`);
     });
 
     // Process availability for each court into a flattened list of slots
     const flattenedAvailability: any[] = [];
     
-    courts.forEach(court => {
+    courts.forEach((court: any) => {
       const bookedSlots = court.bookings.map(b => ({
         startTime: b.startTime,
         endTime: b.endTime
@@ -214,6 +215,9 @@ export const createBooking = async (req: Request, res: Response): Promise<Respon
 
         const totalPrice = totalHours * court.pricePerHour;
 
+        // Generate 6-digit OTP
+        const otp = crypto.randomInt(100000, 999999).toString();
+
         // Check if slot is already booked (LOCKING/CHECKING within transaction)
         const existingBooking = await tx.booking.findFirst({
           where: {
@@ -249,7 +253,7 @@ export const createBooking = async (req: Request, res: Response): Promise<Respon
           throw new Error('Time slot is already booked');
         }
 
-        // Create booking
+        // Create booking with OTP
         return await tx.booking.create({
           data: {
             userId,
@@ -260,6 +264,7 @@ export const createBooking = async (req: Request, res: Response): Promise<Respon
             totalHours,
             totalPrice,
             notes,
+            otp,
             status: BookingStatus.PENDING
           },
           include: {
@@ -375,7 +380,7 @@ export const getMyBookings = async (req: Request, res: Response): Promise<Respon
 export const getBookingById = async (req: Request, res: Response): Promise<Response> => {
   try {
     const userId = req.user?.userId;
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     if (!userId) {
       return res.status(401).json({
@@ -412,7 +417,7 @@ export const getBookingById = async (req: Request, res: Response): Promise<Respo
     }
 
     // Check if user owns this booking or is the venue owner
-    if (booking.userId !== userId && booking.court.venue.ownerId !== userId) {
+    if (booking.userId !== userId && (booking as any).court.venue.ownerId !== userId) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'
@@ -440,7 +445,7 @@ export const cancelBooking = async (req: Request, res: Response): Promise<Respon
   try {
     const userId = req.user?.userId;
 
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     if (!userId) {
       return res.status(401).json({
@@ -519,7 +524,7 @@ export const cancelBooking = async (req: Request, res: Response): Promise<Respon
 export const rescheduleBooking = async (req: Request, res: Response): Promise<Response> => {
   try {
     const userId = req.user?.userId;
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { bookingDate, startTime, endTime } = req.body as RescheduleBookingBody;
 
     if (!userId) {

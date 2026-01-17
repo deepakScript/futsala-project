@@ -1,4 +1,4 @@
-import 'dart:math';
+
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +8,7 @@ import 'package:futsala_app/widgets/message_helper.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:futsala_app/widgets/custom_button.dart';
+
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -49,10 +49,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
       MessageHelper.showMessage(context, result);
 
       // 2️⃣ Wait for 2 seconds
-      await Future.delayed(Duration(seconds: 2), () {
+      await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
         // 3️⃣ Then navigate to the login screen
-        context.goToLogin();
-      });
+      context.goToLogin();
     } else {
       MessageHelper.showMessage(context, result);
     }
@@ -308,11 +308,37 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, child) {
-                    return CustomButton(
-                      text: "Sign In",
-                      onPressed: () => _handleRegister(),
+                    return SizedBox(
                       width: double.infinity,
                       height: 55,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00C37A),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: authProvider.isLoading
+                            ? null
+                            : _handleRegister,
+                        child: authProvider.isLoading
+                            ? const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2.5,
+                                ),
+                              )
+                            : const Text(
+                                "Sign Up",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ),
                     );
                   },
                 ),
@@ -330,7 +356,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         children: [
                           TextSpan(
                             text: "Log In",
-                            style: const TextStyle(color: Colors.green),
+                            style: const TextStyle(color: Color(0xFF00C37A)),
                             recognizer: TapGestureRecognizer()
                               ..onTap = () {
                                 context.go('/login');
@@ -362,21 +388,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   children: [
                     IconButton(
                       onPressed: () {
-                        print("facebook Connected");
                       },
                       icon: FaIcon(FontAwesomeIcons.facebook),
                     ),
                     SizedBox(width: 24),
                     IconButton(
                       onPressed: () {
-                        print("google Connected");
                       },
                       icon: FaIcon(FontAwesomeIcons.google),
                     ),
                     SizedBox(width: 24),
                     IconButton(
                       onPressed: () {
-                        print("apple Connected");
+                        
                       },
                       icon: FaIcon(FontAwesomeIcons.apple),
                     ),

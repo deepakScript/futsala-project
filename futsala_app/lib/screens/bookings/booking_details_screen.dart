@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:futsala_app/core/router/app_router.dart';
 import 'package:futsala_app/data/models/booking_model.dart';
 import 'package:futsala_app/provider/booking_provider.dart';
 import 'package:intl/intl.dart';
@@ -10,9 +11,9 @@ class BookingDetailsScreen extends StatefulWidget {
   final Booking booking;
 
   const BookingDetailsScreen({
-    Key? key,
+    super.key,
     required this.booking,
-  }) : super(key: key);
+  });
 
   @override
   State<BookingDetailsScreen> createState() => _BookingDetailsScreenState();
@@ -30,7 +31,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'confirmed':
-        return Colors.green;
+        return const Color(0xFF00C37A);
       case 'pending':
         return Colors.orange;
       case 'cancelled':
@@ -83,7 +84,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
+                color: statusColor.withValues(alpha: 0.1),
               ),
               child: Column(
                 children: [
@@ -102,18 +103,17 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'Booking ID: ${_booking.id}',
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 12,
-                    ),
-                  ),
                 ],
               ),
             ),
 
             const SizedBox(height: 16),
+
+            // OTP Display Card (if available)
+            if (_booking.otp != null) ...[
+              _buildOTPCard(),
+              const SizedBox(height: 16),
+            ],
 
             // Venue Details Card
             _buildCard(
@@ -232,7 +232,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -337,7 +337,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, size: 20, color: color),
@@ -370,8 +370,111 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
     );
   }
 
+  Widget _buildOTPCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF00C37A), Color(0xFF00A862)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00C37A).withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.qr_code_2,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Booking Verification Code',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Show this code at the venue',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _booking.otp ?? '------',
+                    style: const TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 8,
+                      color: Color(0xFF00C37A),
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Valid for this booking only',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget? _buildBottomActions() {
-    if (!_booking.canBeCancelled) {
+    final canCancel = _booking.canBeCancelled;
+    final isPending = _booking.status.toLowerCase() == 'pending';
+
+    if (!canCancel && !isPending) {
       return null;
     }
 
@@ -381,64 +484,117 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
         ],
       ),
       child: SafeArea(
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Reschedule Button
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _showRescheduleDialog,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF00C37A),
-                  side: const BorderSide(color: Color(0xFF00C37A), width: 2),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                icon: const Icon(Icons.edit_calendar),
-                label: const Text(
-                  'Reschedule',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Cancel Button
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: _showCancelDialog,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 0,
-                ),
-                icon: const Icon(Icons.cancel),
-                label: const Text(
-                  'Cancel',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
+            if (isPending)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _initiatePayment,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.purple,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 0,
+                    ),
+                    icon: const Icon(Icons.payment),
+                    label: const Text(
+                      'Pay Now to Confirm',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+            if (canCancel)
+              Row(
+                children: [
+                  // Reschedule Button
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _showRescheduleDialog,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF00C37A),
+                        side: const BorderSide(color: Color(0xFF00C37A), width: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      icon: const Icon(Icons.edit_calendar),
+                      label: const Text(
+                        'Reschedule',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Cancel Button
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _showCancelDialog,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                      icon: const Icon(Icons.cancel),
+                      label: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _initiatePayment() async {
+    final bookingProvider = context.read<BookingProvider>();
+    await bookingProvider.payWithKhalti(
+      context, 
+      _booking.id,
+      onSuccess: () {
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Payment Successful!'),
+              backgroundColor: Color(0xFF00C37A),
+            ),
+          );
+          Navigator.pop(context); // Go back to list which will refresh
+          context.go(AppRoutes.home);
+        }
+      },
     );
   }
 
@@ -474,6 +630,9 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
   }
 
   void _showCancelDialog() {
+    final refundAmount = _booking.totalPrice * 0.95;
+    final cancellationFee = _booking.totalPrice * 0.05;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -485,9 +644,108 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
             Text('Cancel Booking?'),
           ],
         ),
-        content: const Text(
-          'Are you sure you want to cancel this booking? This action cannot be undone.',
-          style: TextStyle(fontSize: 16),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Are you sure you want to cancel this booking?',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Cancellation Policy',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '• 5% cancellation fee will be deducted',
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '• Refund will be processed within 5-7 business days',
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Original Amount:',
+                  style: TextStyle(fontSize: 14),
+                ),
+                Text(
+                  'Rs. ${_booking.totalPrice.toInt()}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Cancellation Fee (5%):',
+                  style: TextStyle(fontSize: 14, color: Colors.red.shade700),
+                ),
+                Text(
+                  '- Rs. ${cancellationFee.toInt()}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.red.shade700,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Refund Amount:',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  'Rs. ${refundAmount.toInt()}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF00C37A),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -508,7 +766,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Yes, Cancel'),
+            child: const Text('Yes, Cancel & Refund'),
           ),
         ],
       ),
@@ -526,34 +784,52 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
     );
 
     final provider = context.read<BookingProvider>();
-    final success = await provider.cancelBooking(_booking.id);
+    final result = await provider.cancelBooking(_booking.id);
 
     // Close loading
     if (mounted) context.pop();
 
     // Show result
     if (mounted) {
-      if (success) {
+      if (result['success'] == true) {
+        final refundAmount = result['refundAmount'] as double;
+        
         setState(() {
-          _booking = _booking.copyWith(status: 'cancelled');
+          _booking = _booking.copyWith(
+            status: 'cancelled',
+            refundAmount: refundAmount,
+            refundStatus: 'pending',
+          );
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Booking cancelled successfully'),
+                const Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text('Booking cancelled successfully'),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Refund: Rs. ${refundAmount.toInt()} (5% fee deducted)',
+                  style: const TextStyle(fontSize: 12),
+                ),
               ],
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: const Color(0xFF00C37A),
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
           ),
         );
 
         // Go back after a delay
-        Future.delayed(const Duration(seconds: 1), () {
+        Future.delayed(const Duration(seconds: 2), () {
           if (mounted) context.pop();
         });
       } else {
@@ -565,7 +841,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    provider.error ?? 'Failed to cancel booking',
+                    result['error']?.toString() ?? provider.error ?? 'Failed to cancel booking',
                   ),
                 ),
               ],

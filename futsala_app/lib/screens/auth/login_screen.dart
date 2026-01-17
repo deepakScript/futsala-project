@@ -1,10 +1,11 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:futsala_app/core/router/router_extension.dart';
-import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:futsala_app/provider/auth_provider.dart';
+import 'package:futsala_app/widgets/message_helper.dart';
+import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:futsala_app/widgets/custom_button.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,8 +21,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _obscurePassword = true;
 
-  void _validateAndLogin(BuildContext context) async {
-    context.goToHome();
+  Future<void> _validateAndLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final authProvider = context.read<AuthProvider>();
+
+    final result = await authProvider.login(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    if (result['message'] == "Login successful") {
+      MessageHelper.showSuccess(context, "Login Successful");
+      await Future.delayed(const Duration(seconds: 1));
+      if (mounted) context.goToHome();
+    } else {
+      MessageHelper.showError(context, result['message']);
+    }
   }
 
   @override
@@ -182,11 +200,41 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 8),
 
                 // Login Button
-                CustomButton(
-                  text: "Login",
-                  onPressed: () => {context.goToBooking()},
-                  width: double.infinity,
-                  height: 55,
+                Consumer<AuthProvider>(
+                  builder: (context, authProvider, child) {
+                    return SizedBox(
+                      width: double.infinity,
+                      height: 55,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00C37A),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: authProvider.isLoading
+                            ? null
+                            : _validateAndLogin,
+                        child: authProvider.isLoading
+                            ? const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2.5,
+                                ),
+                              )
+                            : const Text(
+                                "Login",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ),
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 20),
@@ -202,7 +250,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         children: [
                           TextSpan(
                             text: "Sign Up",
-                            style: const TextStyle(color: Colors.green),
+                            style: const TextStyle(color: Color(0xFF00C37A)),
                             recognizer: TapGestureRecognizer()
                               ..onTap = () {
                                 context.goToRegister();
@@ -234,21 +282,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     IconButton(
                       onPressed: () {
-                        print("facebook Connected");
                       },
                       icon: FaIcon(FontAwesomeIcons.facebook),
                     ),
                     SizedBox(width: 24),
                     IconButton(
                       onPressed: () {
-                        print("Google Connected");
                       },
                       icon: FaIcon(FontAwesomeIcons.google),
                     ),
                     SizedBox(width: 24),
                     IconButton(
                       onPressed: () {
-                        print("apple Connected");
                       },
                       icon: FaIcon(FontAwesomeIcons.apple),
                     ),

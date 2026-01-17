@@ -118,6 +118,84 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  // Forgot Password - Send OTP to email
+  Future<Map<String, dynamic>> forgotPassword({required String email}) async {
+    _setLoading(true);
+    _clearMessages();
+
+    try {
+      final response = await ApiService.post(
+        endpoint: '/auth/forgot-password',
+        body: {'email': email},
+      );
+
+      _setSuccess(response['message'] ?? 'OTP sent to your email!');
+      _setLoading(false);
+
+      return {'success': true, 'message': _successMessage};
+    } catch (e) {
+      final errorMsg = _getErrorMessage(e);
+      _setError(errorMsg);
+      _setLoading(false);
+
+      return {'success': false, 'message': errorMsg};
+    }
+  }
+
+  // Verify OTP
+  Future<Map<String, dynamic>> verifyOTP({
+    required String email,
+    required String otp,
+  }) async {
+    _setLoading(true);
+    _clearMessages();
+
+    try {
+      final response = await ApiService.post(
+        endpoint: '/auth/otp-verification',
+        body: {'email': email, 'otp': otp},
+      );
+
+      _setSuccess(response['message'] ?? 'OTP verified successfully!');
+      _setLoading(false);
+
+      return {'success': true, 'message': _successMessage};
+    } catch (e) {
+      final errorMsg = _getErrorMessage(e);
+      _setError(errorMsg);
+      _setLoading(false);
+
+      return {'success': false, 'message': errorMsg};
+    }
+  }
+
+  // Save new password after OTP verification
+  Future<Map<String, dynamic>> savePassword({
+    required String email,
+    required String newPassword,
+  }) async {
+    _setLoading(true);
+    _clearMessages();
+
+    try {
+      final response = await ApiService.post(
+        endpoint: '/auth/save-password',
+        body: {'email': email, 'newPassword': newPassword},
+      );
+
+      _setSuccess(response['message'] ?? 'Password updated successfully!');
+      _setLoading(false);
+
+      return {'success': true, 'message': _successMessage};
+    } catch (e) {
+      final errorMsg = _getErrorMessage(e);
+      _setError(errorMsg);
+      _setLoading(false);
+
+      return {'success': false, 'message': errorMsg};
+    }
+  }
+
   // Logout user
   Future<void> logout() async {
     try {
@@ -198,8 +276,9 @@ class AuthProvider extends ChangeNotifier {
     required String currentPassword,
     required String newPassword,
   }) async {
-    if (_token == null)
+    if (_token == null) {
       return {'success': false, 'message': 'Not authenticated'};
+    }
 
     _setLoading(true);
     _clearMessages();
@@ -226,8 +305,9 @@ class AuthProvider extends ChangeNotifier {
 
   // Delete account (DELETE request example)
   Future<Map<String, dynamic>> deleteAccount() async {
-    if (_token == null)
+    if (_token == null) {
       return {'success': false, 'message': 'Not authenticated'};
+    }
 
     _setLoading(true);
     _clearMessages();

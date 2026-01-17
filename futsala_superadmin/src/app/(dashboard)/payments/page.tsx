@@ -74,7 +74,7 @@ export default function PaymentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false)
-  const [commissionRate, setCommissionRate] = useState("10")
+  const [commissionRate, setCommissionRate] = useState("2")
 
   useEffect(() => {
     fetchStats()
@@ -141,7 +141,7 @@ export default function PaymentsPage() {
             <DollarSign className="h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Rs. {stats?.totalRevenue.toLocaleString() || '0'}</div>
+            <div className="text-2xl font-bold">Nrs. {stats?.totalRevenue.toLocaleString() || '0'}</div>
             <p className="text-xs opacity-70 mt-1">
               Gross transaction value
             </p>
@@ -154,7 +154,7 @@ export default function PaymentsPage() {
             <TrendingUp className="h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Rs. {stats?.totalCommission.toLocaleString() || '0'}</div>
+            <div className="text-2xl font-bold">Nrs. {stats?.totalCommission.toLocaleString() || '0'}</div>
             <p className="text-xs opacity-70 mt-1">
               Currently @ {commissionRate}%
             </p>
@@ -167,7 +167,7 @@ export default function PaymentsPage() {
             <RefreshCcw className="h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Rs. {stats?.totalRefunded.toLocaleString() || '0'}</div>
+            <div className="text-2xl font-bold">Nrs. {stats?.totalRefunded.toLocaleString() || '0'}</div>
             <p className="text-xs opacity-70 mt-1">
               Processed through platform
             </p>
@@ -180,7 +180,7 @@ export default function PaymentsPage() {
             <Clock className="h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Rs. {(payouts.reduce((sum, p) => sum + p.netPayout, 0)).toLocaleString()}</div>
+            <div className="text-2xl font-bold">Nrs. {(payouts.reduce((sum, p) => sum + p.netPayout, 0)).toLocaleString()}</div>
             <p className="text-xs opacity-70 mt-1">
               Net venue earnings (All-time)
             </p>
@@ -268,7 +268,7 @@ export default function PaymentsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="font-bold">
-                        Rs. {tx.amount}
+                        Nrs. {tx.amount}
                       </TableCell>
                       <TableCell>
                         {getStatusBadge(tx.status)}
@@ -329,10 +329,10 @@ export default function PaymentsPage() {
                           <span className="text-xs text-muted-foreground">{p.ownerName}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm">Rs. {p.grossRevenue.toLocaleString()}</TableCell>
-                      <TableCell className="text-sm text-rose-500">- Rs. {p.commission.toLocaleString()}</TableCell>
+                      <TableCell className="text-sm">Nrs. {p.grossRevenue.toLocaleString()}</TableCell>
+                      <TableCell className="text-sm text-rose-500">- Nrs. {p.commission.toLocaleString()}</TableCell>
                       <TableCell className="text-lg font-bold text-emerald-600">
-                        Rs. {p.netPayout.toLocaleString()}
+                        Nrs. {p.netPayout.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button variant="outline" size="sm" className="gap-2">

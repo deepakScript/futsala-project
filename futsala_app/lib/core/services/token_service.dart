@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:futsala_app/data/models/user_model.dart';
 
 class AuthStorage {
-  static const String _tokenKey = "access_token";
+  static const String _tokenKey = "auth_token";
   static const String _userKey = "user_data";
 
   /// Save access token
@@ -22,7 +22,9 @@ class AuthStorage {
   /// Get token
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_tokenKey);
+    final token = prefs.getString(_tokenKey);
+    
+    return token;
   }
 
   /// Get user

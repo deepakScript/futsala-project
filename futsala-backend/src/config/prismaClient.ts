@@ -1,7 +1,7 @@
 import { PrismaClient, BookingStatus } from "@prisma/client";
 
 const prisma = new PrismaClient({
-  log: ['warn', 'error'],
+  log: ['query', 'info', 'warn', 'error'],
   datasources: {
     db: {
       url: process.env.DATABASE_URL,
@@ -12,11 +12,13 @@ const prisma = new PrismaClient({
 // Handle connection errors gracefully
 prisma.$connect()
   .then(() => {
-    console.log('✅ Connected to Neon PostgreSQL');
+    console.log('✅ Connected to Neon PostgreSQL (Prisma)');
   })
   .catch((error) => {
-    console.error('❌ Failed to connect to database:', error.message);
-    // Don't exit process, allow retries
+    console.error('❌ Failed to connect to database (Prisma):', error.message);
+    if (error.code === 'P1001') {
+      console.error('💡 Tip: Make sure your database server is running and accessible.');
+    }
   });
 
 // Graceful shutdown

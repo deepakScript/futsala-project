@@ -19,7 +19,9 @@ extension NavigationExtensions on BuildContext {
   }
 
   //navigate to saved password
-  void goToSavePassword() => go(AppRoutes.savePassword);
+  void goToSavePassword(String email) {
+    goNamed(AppRoutes.savePasswordName, pathParameters: {'email': email});
+  }
   // Navigate to register
   void goToRegister() => go(AppRoutes.register);
 
@@ -36,6 +38,10 @@ extension NavigationExtensions on BuildContext {
   void pushToLogin() => push(AppRoutes.login);
   void pushToRegister() => push(AppRoutes.register);
   void pushToHome() => push(AppRoutes.home);
+
+  //futsal page
+  void goToFutsalDetail(String venueId) =>
+      goNamed(AppRoutes.futsalView, pathParameters: {'venueId': venueId});
 
   // Named navigation (alternative method)
   void goToLoginNamed() => goNamed(AppRoutes.loginName);

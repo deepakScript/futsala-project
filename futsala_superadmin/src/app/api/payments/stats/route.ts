@@ -25,9 +25,9 @@ export async function GET() {
     const totalRevenue = totalPaid._sum.amount || 0
     const totalRefundedAmt = totalRefunded._sum.amount || 0
     
-    // Commission is 10%
-    const totalCommission = totalRevenue * 0.1
-    const netPlatformRevenue = totalCommission - (totalRefundedAmt * 0.1) // 10% of refunds lost? or full? 
+    // Commission is 2%
+    const totalCommission = totalRevenue * 0.02
+    const netPlatformRevenue = totalCommission - (totalRefundedAmt * 0.02) // 2% of refunds lost? or full? 
     // Usually commission is only on successful non-refunded bookings.
     
     return NextResponse.json({

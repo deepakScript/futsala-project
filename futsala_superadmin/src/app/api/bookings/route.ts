@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const venueId = searchParams.get('venueId')
     const status = searchParams.get('status')
     const date = searchParams.get('date')
+    const search = searchParams.get('search')
 
     const where: any = {}
 
@@ -19,6 +20,15 @@ export async function GET(request: NextRequest) {
 
     if (status) {
       where.status = status
+    }
+
+    if (search) {
+      where.OR = [
+        { user: { fullName: { contains: search, mode: 'insensitive' } } },
+        { user: { email: { contains: search, mode: 'insensitive' } } },
+        { court: { name: { contains: search, mode: 'insensitive' } } },
+        { otp: { contains: search, mode: 'insensitive' } },
+      ]
     }
 
     if (date) {

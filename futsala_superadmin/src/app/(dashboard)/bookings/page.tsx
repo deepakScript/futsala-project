@@ -120,7 +120,8 @@ export default function BookingsPage() {
     const matchesSearch = 
       booking.user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       booking.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.court.venue.name.toLowerCase().includes(searchTerm.toLowerCase())
+      booking.court.venue.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (booking.otp && booking.otp.toLowerCase().includes(searchTerm.toLowerCase()))
     return matchesSearch
   })
 
@@ -251,7 +252,14 @@ export default function BookingsPage() {
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="font-semibold text-foreground">{booking.user.fullName}</span>
-                      <span className="text-xs text-muted-foreground">{booking.user.email}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">{booking.user.email}</span>
+                        {booking.otp && (
+                          <Badge variant="secondary" className="text-[10px] px-1 h-3.5 bg-muted/50 border-none">
+                            OTP: {booking.otp}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>

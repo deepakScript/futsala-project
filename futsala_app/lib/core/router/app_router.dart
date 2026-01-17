@@ -4,12 +4,18 @@ import 'package:futsala_app/screens/auth/email_verification.dart';
 import 'package:futsala_app/screens/auth/forgot_password_screen.dart';
 import 'package:futsala_app/screens/auth/save_password_screen.dart';
 import 'package:futsala_app/screens/bookings/booking_screen.dart';
+import 'package:futsala_app/screens/bookings/booking_details_screen.dart';
 import 'package:futsala_app/screens/bookings/my_booking_screen.dart';
-import 'package:futsala_app/screens/favourites/favorites_screen.dart';
+import 'package:futsala_app/data/models/booking_model.dart';
+import 'package:futsala_app/screens/favourites/favorite_screen.dart';
 import 'package:futsala_app/screens/futsal/futsal_page.dart';
 import 'package:futsala_app/screens/futsal_view/futsal_detail_screen.dart';
-import 'package:futsala_app/screens/main/ScaffoldWithNavBar.dart';
+import 'package:futsala_app/screens/main/scaffold_with_nav_bar.dart';
+import 'package:futsala_app/screens/profile/edit_profile_screen.dart';
+import 'package:futsala_app/screens/profile/about_screen.dart';
+import 'package:futsala_app/screens/profile/privacy_policy_screen.dart';
 import 'package:futsala_app/screens/profile/profile_screen.dart';
+
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:futsala_app/screens/splash/splash_screen.dart';
@@ -41,8 +47,13 @@ class AppRoutes {
   static const String futsalView = '/futsalView';
   static const String favourites = '/favorites';
   static const String booking = '/booking';
+  static const String bookingDetails = '/booking-details';
   static const String futsalBooking = '/futsal-booking/:venueId';
   static const String profile = '/profile';
+  static const String editProfile = 'edit';
+  static const String privacyPolicy = 'privacy';
+  static const String about = 'about';
+
 
   // Route name constants (for named navigation)
   static const String splashName = 'splash';
@@ -56,8 +67,13 @@ class AppRoutes {
   static const String futsalViewName = 'futsalView';
   static const String favouriteName = 'favourite';
   static const String bookingName = 'booking';
+  static const String bookingDetailsName = 'booking-details';
   static const String futsalBookingName = 'futsal-booking';
   static const String profileName = 'profile';
+  static const String editProfileName = 'edit-profile';
+  static const String privacyPolicyName = 'privacy-policy';
+  static const String aboutName = 'about-futsala';
+
 
   // Create GoRouter instance
   static GoRouter createRouter(BuildContext context, bool isLoggedIn) {
@@ -102,9 +118,12 @@ class AppRoutes {
       },
     ),
     GoRoute(
-      path: savePassword,
+      path: '${AppRoutes.savePassword}/:email',
       name: savePasswordName,
-      builder: (context, state) => const SavePasswordScreen(),
+      builder: (context, state) {
+        final email = state.pathParameters['email']!;
+        return SavePasswordScreen(email: email);
+      },
     ),
     GoRoute(
       path: register,
@@ -133,6 +152,17 @@ class AppRoutes {
         );
       },
     ),
+
+    GoRoute(
+      path: '/booking-details',
+      name: bookingDetailsName,
+      parentNavigatorKey: rootNavigatorKey,
+      builder: (context, state) {
+        final booking = state.extra as Booking;
+        return BookingDetailsScreen(booking: booking);
+      },
+    ),
+
     ShellRoute(
       builder: (context, state, child) {
         return ScaffoldWithNavBar(child: child);
@@ -162,6 +192,26 @@ class AppRoutes {
           path: profile,
           name: profileName,
           builder: (context, state) => const ProfileScreen(),
+          routes: [
+            GoRoute(
+              path: editProfile, // 'edit'
+              name: editProfileName,
+              parentNavigatorKey: rootNavigatorKey,
+              builder: (context, state) => const EditProfileScreen(),
+            ),
+            GoRoute(
+              path: privacyPolicy, // 'privacy'
+              name: privacyPolicyName,
+              parentNavigatorKey: rootNavigatorKey,
+              builder: (context, state) => const PrivacyPolicyScreen(),
+            ),
+            GoRoute(
+              path: about, // 'about'
+              name: aboutName,
+              parentNavigatorKey: rootNavigatorKey,
+              builder: (context, state) => const AboutScreen(),
+            ),
+          ],
         ),
       ],
     ),
@@ -181,8 +231,13 @@ class AppRoutes {
       return null;
     }
 
-    // Redirect to login if not authenticated and not on login/register
-    if (!isLoggedIn && currentPath != login && currentPath != register) {
+    // Redirect to login if not authenticated and not on login/register/password reset flow
+    if (!isLoggedIn &&
+        currentPath != login &&
+        currentPath != register &&
+        !currentPath.startsWith(forgotPassword) &&
+        !currentPath.startsWith(otpVerification) &&
+        !currentPath.startsWith(savePassword)) {
       return login;
     }
 

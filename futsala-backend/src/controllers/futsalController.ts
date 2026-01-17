@@ -46,7 +46,8 @@ export const getAllVenues = async (req: Request, res: Response): Promise<Respons
       },
       orderBy: {
         rating: 'desc'
-      }
+      },
+      take: 5 // Limit to 5 venues
     });
 
     return res.status(200).json({
@@ -69,7 +70,7 @@ export const getAllVenues = async (req: Request, res: Response): Promise<Respons
  */
 export const getVenueById = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const venue = await prisma.venue.findUnique({
       where: { id },

@@ -301,7 +301,7 @@ export default function VenueOwnersPage() {
                       <span className="text-xs text-emerald-600 font-medium">+12%</span>
                     </div>
                     <div className="mt-3">
-                      <div className="text-2xl font-bold">Rs. {ownerPerformance.totalRevenue}</div>
+                      <div className="text-2xl font-bold">Nrs. {ownerPerformance.totalRevenue}</div>
                       <p className="text-xs text-muted-foreground font-medium">Gross Revenue</p>
                     </div>
                   </CardContent>
@@ -325,12 +325,12 @@ export default function VenueOwnersPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Commission (10%)</span>
-                    <span className="font-semibold text-rose-500">- Rs. {ownerPerformance.platformCommission}</span>
+                    <span className="text-muted-foreground">Commission (2%)</span>
+                    <span className="font-semibold text-rose-500">- Nrs. {ownerPerformance.platformCommission}</span>
                   </div>
                   <div className="border-t border-dashed pt-3 flex justify-between">
                     <span className="font-medium">Net Payout</span>
-                    <span className="font-bold text-lg text-emerald-600">Rs. {ownerPerformance.netOwnerEarnings}</span>
+                    <span className="font-bold text-lg text-emerald-600">Nrs. {ownerPerformance.netOwnerEarnings}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -347,8 +347,8 @@ export default function VenueOwnersPage() {
                         <div className="text-xs text-muted-foreground">{v.bookingsCount} bookings</div>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold text-sm">Rs. {v.revenue}</div>
-                        <div className="text-[10px] text-muted-foreground">Comm: Rs. {v.platformCommission}</div>
+                        <div className="font-bold text-sm">Nrs. {v.revenue}</div>
+                        <div className="text-[10px] text-muted-foreground">Comm: Nrs. {v.platformCommission}</div>
                       </div>
                     </div>
                   ))}

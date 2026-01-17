@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:futsala_app/screens/auth/login_screen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:futsala_app/widgets/custom_button.dart';
 
 class SplashScreen extends StatelessWidget {
@@ -53,34 +53,7 @@ class SplashScreen extends StatelessWidget {
                 child: CustomButton(
                   text: "Get Started",
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      PageRouteBuilder(
-                        pageBuilder: (context, animation, secondaryAnimation) =>
-                            const LoginScreen(),
-                        transitionsBuilder:
-                            (context, animation, secondaryAnimation, child) {
-                              const begin = Offset(
-                                1.0,
-                                0.0,
-                              ); // Slide from right
-                              const end = Offset.zero;
-                              const curve = Curves.easeInOut;
-
-                              var tween = Tween(
-                                begin: begin,
-                                end: end,
-                              ).chain(CurveTween(curve: curve));
-                              var offsetAnimation = animation.drive(tween);
-
-                              return SlideTransition(
-                                position: offsetAnimation,
-                                child: child,
-                              );
-                            },
-                        transitionDuration: const Duration(milliseconds: 400),
-                      ),
-                    );
+                    context.go('/login');
                   },
                 ),
               ),

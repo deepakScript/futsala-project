@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:futsala_app/core/router/app_router.dart';
+import 'package:futsala_app/provider/auth_provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
+
     return Scaffold(
       backgroundColor: Colors.white,
 
@@ -30,22 +38,21 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 const CircleAvatar(
                   radius: 35,
-                
                 ),
                 const SizedBox(width: 15),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text(
-                      "Surendar",
-                      style: TextStyle(
+                      user?.fullName ?? "Guest",
+                      style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
-                      "Surendarpv01@gmail.com",
-                      style: TextStyle(
+                      user?.email ?? "Not logged in",
+                      style: const TextStyle(
                         fontSize: 14,
                         color: Colors.grey,
                       ),
@@ -63,36 +70,67 @@ class ProfileScreen extends StatelessWidget {
             child: ListView(
               physics: const BouncingScrollPhysics(),
               children: [
-                buildMenuItem(Icons.person, "Account"),
-                buildMenuItem(Icons.edit_calendar, "Your Booking"),
-                buildMenuItem(Icons.verified, "Refunds"),
-                buildMenuItem(Icons.bookmark_border, "Favourite Venues"),
-                buildMenuItem(Icons.support_agent, "Support"),
-                buildMenuItem(Icons.privacy_tip_outlined, "Privacy Policy"),
-                buildMenuItem(Icons.shield_outlined, "Terms of use"),
+                buildMenuItem(
+                  Icons.person,
+                  "Account",
+                  onTap: () {
+                    context.goNamed(AppRoutes.editProfileName);
+                  },
+                ),
+                buildMenuItem(
+                  Icons.bookmark_border,
+                  "Favourite Venues",
+                  onTap: () {
+                    context.goNamed(AppRoutes.favouriteName);
+                  },
+                ),
+                buildMenuItem(
+                  Icons.privacy_tip_outlined,
+                  "Privacy Policy",
+                  onTap: () {
+                    context.goNamed(AppRoutes.privacyPolicyName);
+                  },
+                ),
+                buildMenuItem(
+                  Icons.info_outline,
+                  "About Futsala",
+                  onTap: () {
+                    context.pushNamed(AppRoutes.aboutName);
+                  },
+                ),
 
                 // Logout
-                buildMenuItem(Icons.logout, "Logout",
-                    color: Colors.red, iconColor: Colors.red),
-              ],
-            ),
-          ),
-
-          // ===================== BOTTOM NAVIGATION BAR =====================
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: Colors.grey.shade300)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: const [
-                BottomNavItem(icon: Icons.home, label: "Home"),
-                BottomNavItem(icon: Icons.sports_soccer, label: "Turf"),
-                BottomNavItem(icon: Icons.edit_calendar, label: "Booking"),
-                BottomNavItem(icon: Icons.bookmark_border, label: "Favorites"),
-                BottomNavItem(
-                    icon: Icons.person, label: "Profile", active: true),
+                buildMenuItem(
+                  Icons.logout,
+                  "Logout",
+                  color: Colors.red,
+                  iconColor: Colors.red,
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text("Logout"),
+                        content: const Text("Are you sure you want to logout?"),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text("Cancel"),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              Navigator.pop(context);
+                              await authProvider.logout();
+                            },
+                            child: const Text(
+                              "OK",
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -103,50 +141,29 @@ class ProfileScreen extends StatelessWidget {
 
   // **************** MENU ITEM BUILDER ****************
   Widget buildMenuItem(IconData icon, String title,
-      {Color color = Colors.black, Color iconColor = Colors.green}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-      child: Row(
-        children: [
-          Icon(icon, size: 34, color: iconColor),
-          const SizedBox(width: 20),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 20,
-              color: color,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
+      {
+    Color color = Colors.black,
+    Color iconColor = const Color(0xFF00C37A),
+    VoidCallback? onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, size: 30, color: iconColor),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 18,
+          color: color,
+          fontWeight: FontWeight.w500,
+        ),
       ),
+      trailing: const Icon(
+        Icons.arrow_forward_ios,
+        size: 16,
+        color: Colors.grey,
+      ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
+      onTap: onTap,
     );
   }
 }
 
-// ================= BOTTOM NAV ITEM WIDGET ==================
-class BottomNavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-
-  const BottomNavItem(
-      {super.key, required this.icon, required this.label, this.active = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 28, color: active ? Colors.green : Colors.black),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: active ? Colors.green : Colors.black,
-          ),
-        )
-      ],
-    );
-  }
-}

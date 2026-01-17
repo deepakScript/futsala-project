@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:futsala_app/core/router/app_router.dart';
 import 'package:futsala_app/data/models/booking_model.dart';
 import 'package:futsala_app/provider/booking_provider.dart';
 import 'package:provider/provider.dart';
@@ -9,7 +10,7 @@ import 'package:provider/provider.dart';
 
 
 class MyBookingsScreen extends StatefulWidget {
-  const MyBookingsScreen({Key? key}) : super(key: key);
+  const MyBookingsScreen({super.key});
 
   @override
   State<MyBookingsScreen> createState() => _MyBookingsScreenState();
@@ -39,58 +40,78 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text(
-          'My Bookings',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: const Color(0xFF00C896),
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: const Color(0xFF00C896),
-          indicatorWeight: 3,
-          labelStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-          tabs: const [
-            Tab(text: 'UPCOMING'),
-            Tab(text: 'PAST'),
-            Tab(text: 'CANCELLED'),
-          ],
-        ),
-      ),
-      body: Consumer<BookingProvider>(
-        builder: (context, bookingProvider, child) {
-          if (bookingProvider.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF00C896),
+      backgroundColor: Colors.white,
+      body: Column(
+        children: [
+          // Gradient Header with Tabs
+          Container(
+            padding: const EdgeInsets.only(top: 60, left: 20, right: 20),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xffC4F7E5), Colors.white],
               ),
-            );
-          }
-
-          if (bookingProvider.error != null) {
-            return _buildErrorState(bookingProvider);
-          }
-
-          return TabBarView(
-            controller: _tabController,
-            children: [
-              _buildBookingList(bookingProvider.upcomingBookings, 'upcoming'),
-              _buildBookingList(bookingProvider.pastBookings, 'past'),
-              _buildBookingList(bookingProvider.cancelledBookings, 'cancelled'),
-            ],
-          );
-        },
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'My Bookings',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TabBar(
+                  controller: _tabController,
+                  labelColor: const Color(0xFF00C37A),
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: const Color(0xFF00C37A),
+                  indicatorWeight: 3,
+                  labelStyle: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                  tabs: const [
+                    Tab(text: 'UPCOMING'),
+                    Tab(text: 'PAST'),
+                    Tab(text: 'CANCELLED'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          Expanded(
+            child: Consumer<BookingProvider>(
+              builder: (context, bookingProvider, child) {
+                if (bookingProvider.isLoading) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF00C37A),
+                    ),
+                  );
+                }
+      
+                if (bookingProvider.error != null) {
+                  return _buildErrorState(bookingProvider);
+                }
+      
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildBookingList(bookingProvider.upcomingBookings, 'upcoming'),
+                    _buildBookingList(bookingProvider.pastBookings, 'past'),
+                    _buildBookingList(bookingProvider.cancelledBookings, 'cancelled'),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -120,7 +141,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
             ElevatedButton.icon(
               onPressed: () => provider.loadMyBookings(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00C896),
+                backgroundColor: const Color(0xFF00C37A),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,
@@ -145,7 +166,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
 
     return RefreshIndicator(
       onRefresh: () => context.read<BookingProvider>().loadMyBookings(),
-      color: const Color(0xFF00C896),
+      color: const Color(0xFF00C37A),
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: bookings.length,
@@ -154,6 +175,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
           return BookingListCard(
             booking: booking,
             onTap: () => _navigateToDetails(booking),
+            onPay: () => _initiatePayment(booking),
           );
         },
       ),
@@ -215,8 +237,28 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
 
   void _navigateToDetails(Booking booking) {
     context.push(
-      '/booking-details',
+      AppRoutes.bookingDetails,
       extra: booking,
+    );
+  }
+
+  Future<void> _initiatePayment(Booking booking) async {
+    final bookingProvider = context.read<BookingProvider>();
+    await bookingProvider.payWithKhalti(
+      context,
+      booking.id,
+      onSuccess: () {
+        if (mounted) {
+          bookingProvider.loadMyBookings();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Payment Successful!'),
+              backgroundColor: Color(0xFF00C37A),
+            ),
+          );
+          context.go(AppRoutes.home);
+        }
+      },
     );
   }
 }
@@ -228,17 +270,19 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
 class BookingListCard extends StatelessWidget {
   final Booking booking;
   final VoidCallback onTap;
+  final VoidCallback onPay;
 
   const BookingListCard({
-    Key? key,
+    super.key,
     required this.booking,
     required this.onTap,
-  }) : super(key: key);
+    required this.onPay,
+  });
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'confirmed':
-        return Colors.green;
+        return const Color(0xFF00C37A);
       case 'pending':
         return Colors.orange;
       case 'cancelled':
@@ -312,7 +356,7 @@ class BookingListCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
+                        color: statusColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -407,16 +451,61 @@ class BookingListCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00C896).withValues(alpha: 0.1),
+                      color: const Color(0xFF00C37A).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       booking.format!,
                       style: const TextStyle(
-                        color: Color(0xFF00C896),
+                        color: Color(0xFF00C37A),
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
+                    ),
+                  ),
+                ],
+
+                // OTP Display (if available and booking is active)
+                if (booking.otp != null && 
+                    (booking.status.toLowerCase() == 'confirmed' || 
+                     booking.status.toLowerCase() == 'pending')) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF00C37A), Color(0xFF00A862)],
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.qr_code_2,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'OTP:',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          booking.otp!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 4,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -441,41 +530,68 @@ class BookingListCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '₹${booking.totalPrice.toInt()}',
+                          'Rs. ${booking.totalPrice.toInt()}',
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF00C896),
+                            color: Color(0xFF00C37A),
                           ),
                         ),
                       ],
                     ),
-                    ElevatedButton(
-                      onPressed: onTap,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00C896),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Row(
-                        children: [
-                          Text(
-                            'View Details',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
+                    Row(
+                      children: [
+                        if (booking.status.toLowerCase() == 'pending')
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ElevatedButton(
+                              onPressed: onPay,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.purple,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: const Text(
+                                'Pay Now',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
                             ),
                           ),
-                          SizedBox(width: 4),
-                          Icon(Icons.arrow_forward, size: 16),
-                        ],
-                      ),
+                        ElevatedButton(
+                          onPressed: onTap,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF00C37A),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Row(
+                            children: [
+                              Text(
+                                'Details',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              SizedBox(width: 4),
+                              Icon(Icons.arrow_forward, size: 16),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, use } from "react"
+import { useEffect, useState, use } from "react"
 import { useRouter } from "next/navigation"
 import { 
   ArrowLeft, 
@@ -9,9 +9,12 @@ import {
   Mail, 
   Calendar, 
   TrendingUp, 
-  Star,
-  Shield,
-  Clock,
+  Star, 
+  Shield, 
+  Clock, 
+  Loader2, 
+  Plus, 
+  Trash2 
 } from "lucide-react"
 import { 
   Card, 
@@ -23,6 +26,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Table,
   TableBody,
@@ -33,6 +38,7 @@ import {
 } from "@/components/ui/table"
 import useVenueStore from "@/store/useVenueStore"
 import { format } from "date-fns"
+import { toast } from "sonner"
 
 export default function VenueDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -41,18 +47,55 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
     selectedVenue, 
     venueStats, 
     isLoading, 
-    fetchVenueDetails, 
+    fetchVenueDetails,
+    updateVenue,
     fetchVenueStats,
-    toggleVenueStatus 
+    toggleVenueStatus
   } = useVenueStore()
+
+  const [localCourtsState, setLocalCourtsState] = useState<any[]>([])
 
   useEffect(() => {
     fetchVenueDetails(id)
     fetchVenueStats(id)
   }, [id, fetchVenueDetails, fetchVenueStats])
 
+  useEffect(() => {
+    if (selectedVenue?.courts) {
+      setLocalCourtsState(selectedVenue.courts)
+    }
+  }, [selectedVenue])
+
+  const addCourt = () => {
+    setLocalCourtsState([
+      ...localCourtsState,
+      { name: `Court ${localCourtsState.length + 1}`, pricePerHour: 1000 }
+    ])
+    toast.success("New court added locally. Don't forget to save!")
+  }
+
+  const removeCourt = (index: number) => {
+    const updated = [...localCourtsState]
+    updated.splice(index, 1)
+    setLocalCourtsState(updated)
+  }
+
+  const handleUpdateCourts = async () => {
+    if (!selectedVenue) return
+    try {
+      await updateVenue(selectedVenue.id, { courts: localCourtsState })
+      toast.success("Courts updated successfully")
+    } catch (error) {
+      toast.error("Failed to update courts")
+    }
+  }
+
   if (isLoading && !selectedVenue) {
-    return <div className="flex h-100 items-center justify-center">Loading...</div>
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   if (!selectedVenue) return null
@@ -87,8 +130,9 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
       </div>
 
       <Tabs defaultValue="details" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 max-w-100">
+        <TabsList className="grid w-full grid-cols-4 max-w-[600px]">
           <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="courts">Courts</TabsTrigger>
           <TabsTrigger value="bookings">Bookings</TabsTrigger>
           <TabsTrigger value="earnings">Earnings</TabsTrigger>
         </TabsList>
@@ -117,7 +161,7 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-1">
-                    <p className="font-bold text-2xl">{selectedVenue.rating.toFixed(1)} / 5.0</p>
+                    <p className="font-bold text-2xl">{selectedVenue.rating ? selectedVenue.rating.toFixed(1) : "0.0"} / 5.0</p>
                     <p className="text-sm text-muted-foreground">Based on {selectedVenue.totalReviews} reviews</p>
                   </div>
                 </CardContent>
@@ -151,6 +195,70 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
                   <Badge key={amenity} variant="outline" className="text-xs">{amenity}</Badge>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="courts" className="pt-4 space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Court Management</CardTitle>
+                <CardDescription>Add or modify courts for this venue.</CardDescription>
+              </div>
+              <Button size="sm" variant="outline" onClick={addCourt} className="gap-2">
+                <Plus className="h-4 w-4" /> Add Court
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-4">
+                {localCourtsState.map((court: any, index: number) => (
+                  <div key={court.id || `new-${index}`} className="flex items-end gap-4 p-4 rounded-lg border bg-muted/20">
+                    <div className="grid gap-2 flex-1">
+                      <Label className="text-xs uppercase text-muted-foreground font-bold">Court Name</Label>
+                      <Input 
+                        value={court.name} 
+                        onChange={(e) => {
+                          const updated = [...localCourtsState]
+                          updated[index].name = e.target.value
+                          setLocalCourtsState(updated)
+                        }}
+                      />
+                    </div>
+                    <div className="grid gap-2 w-32">
+                      <Label className="text-xs uppercase text-muted-foreground font-bold">Price / Hr</Label>
+                      <Input 
+                        type="number"
+                        value={court.pricePerHour} 
+                        onChange={(e) => {
+                          const updated = [...localCourtsState]
+                          updated[index].pricePerHour = parseFloat(e.target.value)
+                          setLocalCourtsState(updated)
+                        }}
+                      />
+                    </div>
+                    {!court.id && (
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => removeCourt(index)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                {localCourtsState.length === 0 && (
+                  <div className="text-center py-10 border border-dashed rounded-lg bg-muted/10">
+                    <p className="text-muted-foreground">No courts registered for this venue.</p>
+                  </div>
+                )}
+              </div>
+              
+              {localCourtsState.length > 0 && (
+                <div className="flex justify-end pt-4">
+                  <Button onClick={handleUpdateCourts} disabled={isLoading}>
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Court Changes
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -196,7 +304,7 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
                          </Badge>
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        Rs. {booking.totalPrice.toLocaleString()}
+                        Nrs. {booking.totalPrice.toLocaleString()}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -220,15 +328,15 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
                   <CardTitle className="text-xs text-muted-foreground uppercase">Total Revenue</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">Rs. {venueStats?.summary.totalRevenue.toLocaleString()}</div>
+                  <div className="text-2xl font-bold">Nrs. {venueStats?.summary.totalRevenue.toLocaleString() || 0}</div>
                 </CardContent>
              </Card>
              <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-xs text-muted-foreground uppercase">Commission (10%)</CardTitle>
+                  <CardTitle className="text-xs text-muted-foreground uppercase">Commission (2%)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-red-500">Rs. {venueStats?.summary.commission.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-red-500">Nrs. {venueStats?.summary.commission.toLocaleString() || 0}</div>
                 </CardContent>
              </Card>
              <Card>
@@ -236,7 +344,7 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
                   <CardTitle className="text-xs text-muted-foreground uppercase">Net Earnings</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-500">Rs. {venueStats?.summary.netOwnerEarnings.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-green-500">Nrs. {venueStats?.summary.netOwnerEarnings.toLocaleString() || 0}</div>
                 </CardContent>
              </Card>
              <Card>
@@ -246,7 +354,7 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
                 <CardContent>
                    <div className="flex items-center gap-2">
                      <TrendingUp className="h-5 w-5 text-green-500" />
-                     <span className="font-bold">90% Margin</span>
+                     <span className="font-bold">98% Margin</span>
                    </div>
                 </CardContent>
              </Card>
@@ -262,25 +370,25 @@ export default function VenueDetailPage({ params }: { params: Promise<{ id: stri
                    <div className="flex items-center justify-between border-b pb-4">
                       <div>
                         <h4 className="font-semibold">Standard Platform Fee</h4>
-                        <p className="text-sm text-muted-foreground">Fixed commission of 10% on every successful booking.</p>
+                        <p className="text-sm text-muted-foreground">Fixed commission of 2% on every successful booking.</p>
                       </div>
                       <div className="text-right">
-                        <span className="text-lg font-bold">10%</span>
+                        <span className="text-lg font-bold">2%</span>
                       </div>
                    </div>
                    
                    <div className="rounded-lg bg-muted/30 p-4 space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>Gross Transactions</span>
-                        <span>Rs. {venueStats?.summary.totalRevenue.toLocaleString()}</span>
+                        <span>Nrs. {venueStats?.summary.totalRevenue.toLocaleString() || 0}</span>
                       </div>
                       <div className="flex justify-between text-sm text-red-500">
-                        <span>Platform Cut (-10%)</span>
-                        <span>- Rs. {venueStats?.summary.commission.toLocaleString()}</span>
+                        <span>Platform Cut (-2%)</span>
+                        <span>- Nrs. {venueStats?.summary.commission.toLocaleString() || 0}</span>
                       </div>
                       <div className="border-t pt-2 mt-2 flex justify-between font-bold text-lg">
                         <span>Payable to Owner</span>
-                        <span className="text-green-600">Rs. {venueStats?.summary.netOwnerEarnings.toLocaleString()}</span>
+                        <span className="text-green-600">Nrs. {venueStats?.summary.netOwnerEarnings.toLocaleString() || 0}</span>
                       </div>
                    </div>
                 </div>

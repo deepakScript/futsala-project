@@ -19,6 +19,7 @@ interface Booking {
   status: string;
   totalPrice: number;
   paymentStatus: string;
+  otp?: string;
   user: {
     fullName: string;
     email: string;

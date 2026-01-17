@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:futsala_app/provider/booking_provider.dart';
 import 'package:futsala_app/provider/payment_provider.dart';
 import 'package:futsala_app/data/models/timeslot_model.dart';
+import 'package:futsala_app/core/router/app_router.dart';
 
 class BookingScreen extends StatefulWidget {
   final String venueName;
@@ -12,11 +13,11 @@ class BookingScreen extends StatefulWidget {
   final String futsalId;
 
   const BookingScreen({
-    Key? key,
+    super.key,
     required this.venueName,
     required this.venueLocation,
     required this.futsalId,
-  }) : super(key: key);
+  });
 
   @override
   State<BookingScreen> createState() => _BookingScreenState();
@@ -50,7 +51,16 @@ class _BookingScreenState extends State<BookingScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.goNamed(
+                AppRoutes.futsalViewName,
+                pathParameters: {'venueId': widget.futsalId},
+              );
+            }
+          },
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -334,15 +344,15 @@ class _BookingScreenState extends State<BookingScreen> {
   Widget _buildBottomBar(BookingProvider provider) {
     final hasSelection = selectedSlots.isNotEmpty;
     final totalPrice = provider.calculateTotalPrice(selectedSlots);
-    const discount = 200.0;
-    final finalPrice = totalPrice - (selectedSlots.isNotEmpty ? discount : 0);
+    // const discount = 200.0;
+    final finalPrice = totalPrice;
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -351,37 +361,37 @@ class _BookingScreenState extends State<BookingScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (hasSelection)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: const Color(0xFFFF4444),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Icon(
-                      Icons.local_offer,
-                      size: 16,
-                      color: Color(0xFFFF4444),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Offer applied You are saving ₹200',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          // if (hasSelection)
+          //   Container(
+          //     width: double.infinity,
+          //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          //     color: const Color(0xFFFF4444),
+          //     child: Row(
+          //       children: [
+          //         Container(
+          //           padding: const EdgeInsets.all(4),
+          //           decoration: BoxDecoration(
+          //             color: Colors.white,
+          //             borderRadius: BorderRadius.circular(4),
+          //           ),
+          //           child: const Icon(
+          //             Icons.local_offer,
+          //             size: 16,
+          //             color: Color(0xFFFF4444),
+          //           ),
+          //         ),
+          //         const SizedBox(width: 8),
+          //         const Text(
+          //           'Offer applied You are saving ₹200',
+          //           style: TextStyle(
+          //             color: Colors.white,
+          //             fontWeight: FontWeight.w500,
+          //             fontSize: 14,
+          //           ),
+          //         ),
+          //       ],
+          //     ),
+          //   ),
           Container(
             padding: const EdgeInsets.all(16),
             color: const Color(0xFF00C37A),
@@ -474,8 +484,43 @@ class _BookingScreenState extends State<BookingScreen> {
     if (mounted) {
       if (bookingId != null) {
         // Start Khalti SDK Payment
-        await paymentProvider.payWithKhalti(context, bookingId);
+        await paymentProvider.payWithKhalti(
+          context,
+          bookingId,
+          onSuccess: () {
+            // Show immediate success message
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Booking Successful! Redirecting...'),
+                backgroundColor: Color(0xFF00C37A),
+                duration: Duration(seconds: 1),
+              ),
+            );
 
+            // Immediate redirection
+            if (mounted) {
+              context.goNamed(
+                AppRoutes.futsalViewName,
+                pathParameters: {'venueId': widget.futsalId},
+              );
+            }
+
+            // Refresh slots to show them as booked (unavailable)
+            _fetchAvailability();
+          },
+          onFailure: (errorMessage) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Payment Failed: $errorMessage'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          },
+        );
+
+        if (!mounted) return;
+
+        // Check for immediate initiation error (though onFailure should handle it too)
         if (paymentProvider.error != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -483,14 +528,6 @@ class _BookingScreenState extends State<BookingScreen> {
               backgroundColor: Colors.red,
             ),
           );
-        } else if (paymentProvider.successMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(paymentProvider.successMessage!),
-              backgroundColor: Colors.green,
-            ),
-          );
-          context.pop();
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

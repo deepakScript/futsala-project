@@ -51,7 +51,7 @@ export async function GET() {
     .slice(0, 5)
 
     const totalRevenue = totalRevenueData._sum.totalPrice || 0
-    const platformCommission = totalRevenue * 0.1
+    const platformCommission = totalRevenue * 0.02
 
     // Prepare Chart Data
     const bookingTrend = {

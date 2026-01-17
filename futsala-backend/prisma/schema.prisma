@@ -40,7 +40,6 @@ model User {
   isVerified    Boolean       @default(false)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-  
   bookings      Booking[]
   venues        Venue[]
   reviews       Review[]
@@ -131,6 +130,7 @@ model Booking {
   status          BookingStatus   @default(PENDING)
   paymentStatus   PaymentStatus   @default(PENDING)
   notes           String?
+  otp             String?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   

@@ -1,7 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:futsala_app/core/router/router_extension.dart';
+import 'package:futsala_app/provider/auth_provider.dart';
+import 'package:futsala_app/widgets/message_helper.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
+import 'package:provider/provider.dart';
 
 class EmailOTPVerificationScreen extends StatefulWidget {
   final String email; // email passed from previous page
@@ -36,17 +40,53 @@ class _EmailOTPVerificationScreenState
   void dispose() {
     timer?.cancel();
     errorController?.close();
+    otpController.dispose();
     super.dispose();
   }
 
-  void verifyOTP() {
-    if (otpController.text.length == 6) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("OTP Verified")));
-      context.goToSavePassword();
-    } else {
+  Future<void> verifyOTP() async {
+    if (otpController.text.length != 6) {
       errorController!.add(ErrorAnimationType.shake);
+      MessageHelper.showError(context, "Please enter a valid 6-digit OTP");
+      return;
+    }
+
+    final authProvider = context.read<AuthProvider>();
+    final result = await authProvider.verifyOTP(
+      email: widget.email,
+      otp: otpController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    if (result['success'] == true) {
+      MessageHelper.showSuccess(context, result['message']);
+      await Future.delayed(const Duration(seconds: 1));
+      if (mounted) {
+        context.goToSavePassword(widget.email);
+      }
+    } else {
+      MessageHelper.showError(context, result['message']);
+      errorController!.add(ErrorAnimationType.shake);
+    }
+  }
+
+  Future<void> resendOTP() async {
+    if (remainingTime > 0) return;
+
+    final authProvider = context.read<AuthProvider>();
+    final result = await authProvider.forgotPassword(email: widget.email);
+
+    if (!mounted) return;
+
+    if (result['success'] == true) {
+      MessageHelper.showSuccess(context, "OTP resent successfully!");
+      setState(() {
+        remainingTime = 60;
+        otpController.clear();
+      });
+    } else {
+      MessageHelper.showError(context, result['message']);
     }
   }
 
@@ -65,7 +105,7 @@ class _EmailOTPVerificationScreenState
                 children: [
                   IconButton(
                     icon: const Icon(Icons.arrow_back, size: 26),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => context.pop(),
                   ),
                   const SizedBox(width: 6),
                   const Text(
@@ -73,7 +113,7 @@ class _EmailOTPVerificationScreenState
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green,
+                      color: Color(0xFF00C37A),
                     ),
                   ),
                 ],
@@ -105,56 +145,70 @@ class _EmailOTPVerificationScreenState
                   borderRadius: BorderRadius.circular(8),
                   fieldHeight: 55,
                   fieldWidth: 45,
-                  activeColor: Colors.green,
-                  selectedColor: Colors.green,
+                  activeColor: const Color(0xFF00C37A),
+                  selectedColor: const Color(0xFF00C37A),
                   inactiveColor: Colors.grey,
                 ),
                 onChanged: (value) {},
               ),
 
-              const SizedBox(height: 10),
-
-              /// AUTO FETCH TEXT
-              Row(
-                children: const [
-                  CircularProgressIndicator(strokeWidth: 2),
-                  SizedBox(width: 8),
-                  Text(
-                    "Auto fetching OTP...",
-                    style: TextStyle(color: Colors.green),
-                  ),
-                ],
-              ),
               const SizedBox(height: 20),
 
               /// SUBMIT BUTTON
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+              Consumer<AuthProvider>(
+                builder: (context, authProvider, child) {
+                  return SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00C37A),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: authProvider.isLoading ? null : verifyOTP,
+                      child: authProvider.isLoading
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              ),
+                            )
+                          : const Text(
+                              "Submit",
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
-                  ),
-                  onPressed: verifyOTP,
-                  child: const Text(
-                    "Submit",
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ),
+                  );
+                },
               ),
 
               const SizedBox(height: 15),
 
               /// RETRY OTP TIMER
               Center(
-                child: Text(
-                  remainingTime > 0
-                      ? "Didn’t receive it? Retry in 00:$remainingTime"
-                      : "Resend OTP",
-                  style: const TextStyle(fontSize: 15),
+                child: GestureDetector(
+                  onTap: resendOTP,
+                  child: Text(
+                    remainingTime > 0
+                        ? "Didn't receive it? Retry in 00:${remainingTime.toString().padLeft(2, '0')}"
+                        : "Resend OTP",
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: remainingTime > 0
+                          ? Colors.black
+                          : const Color(0xFF00C37A),
+                      fontWeight: remainingTime > 0
+                          ? FontWeight.normal
+                          : FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ],
