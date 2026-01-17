@@ -20,6 +20,7 @@ interface Booking {
   status: string;
   totalPrice: number;
   paymentStatus: string;
+  otp?: string;
   user: {
     fullName: string;
     email: string;
@@ -99,10 +100,15 @@ export default function BookingDetails({ booking, isOpen, onClose, onStatusUpdat
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div className="space-y-1">
               <label className="text-[10px] uppercase font-bold text-muted-foreground">Payment Status</label>
-              <div>
+              <div className="flex items-center gap-2">
                 <Badge variant={booking.paymentStatus === 'PAID' ? 'default' : 'secondary'}>
                   {booking.paymentStatus}
                 </Badge>
+                {booking.otp && (
+                  <Badge variant="outline" className="font-mono">
+                    OTP: {booking.otp}
+                  </Badge>
+                )}
               </div>
             </div>
             <div className="space-y-1 text-right">
