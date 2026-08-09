@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '@/lib/axios';
 import { format } from 'date-fns';
 import {
   Table,
@@ -61,7 +61,7 @@ export default function UsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('/api/users');
+      const response = await axiosInstance.get('/users');
       setUsers(response.data);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -77,7 +77,7 @@ export default function UsersPage() {
 
   const toggleUserStatus = async (user: User) => {
     try {
-      await axios.patch(`/api/users/${user.id}/status`, {
+      await axiosInstance.patch(`/users/${user.id}/status`, {
         isVerified: !user.isVerified,
       });
       
@@ -97,7 +97,7 @@ export default function UsersPage() {
     setIsSheetOpen(true);
     setLoadingBookings(true);
     try {
-      const response = await axios.get(`/api/users/${user.id}/bookings`);
+      const response = await axiosInstance.get(`/users/${user.id}/bookings`);
       setUserBookings(response.data);
     } catch (error) {
       console.error('Error fetching booking history:', error);

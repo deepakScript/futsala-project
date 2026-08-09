@@ -60,7 +60,7 @@ const usePaymentStore = create<PaymentState>((set, get) => ({
       if (filters?.status) params.append('status', filters.status)
       if (filters?.method) params.append('method', filters.method)
       
-      const response = await axiosInstance.get(`/api/payments?${params.toString()}`)
+      const response = await axiosInstance.get(`/payments?${params.toString()}`)
       set({ transactions: response.data.payments, isLoading: false })
     } catch (err: any) {
       set({ error: err.response?.data?.error || "Failed to fetch transactions", isLoading: false })
@@ -70,7 +70,7 @@ const usePaymentStore = create<PaymentState>((set, get) => ({
   fetchStats: async () => {
     set({ isLoading: true, error: null })
     try {
-      const response = await axiosInstance.get('/api/payments/stats')
+      const response = await axiosInstance.get('/payments/stats')
       set({ stats: response.data, isLoading: false })
     } catch (err: any) {
       set({ error: err.response?.data?.error || "Failed to fetch stats", isLoading: false })
@@ -80,7 +80,7 @@ const usePaymentStore = create<PaymentState>((set, get) => ({
   fetchPayouts: async () => {
     set({ isLoading: true, error: null })
     try {
-      const response = await axiosInstance.get('/api/payments/payouts')
+      const response = await axiosInstance.get('/payments/payouts')
       set({ payouts: response.data.payouts, isLoading: false })
     } catch (err: any) {
       set({ error: err.response?.data?.error || "Failed to fetch payouts", isLoading: false })
@@ -91,7 +91,7 @@ const usePaymentStore = create<PaymentState>((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       // We use the existing booking PATCH endpoint which handles refund logic
-      await axiosInstance.patch(`/api/bookings/${bookingId}`, { 
+      await axiosInstance.patch(`/bookings/${bookingId}`, { 
         status: 'CANCELLED',
         paymentStatus: 'REFUNDED'
       })

@@ -67,6 +67,8 @@ model Venue {
   description   String
   address       String
   city          String
+  latitude      Float?
+  longitude     Float?
   phoneNumber   String
   email         String?
   images        String[]

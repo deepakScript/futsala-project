@@ -61,7 +61,7 @@ const useBookingStore = create<BookingState>((set, get) => ({
       if (filters?.status) params.append('status', filters.status)
       if (filters?.date) params.append('date', filters.date)
 
-      const response = await axiosInstance.get(`/api/bookings?${params.toString()}`)
+      const response = await axiosInstance.get(`/bookings?${params.toString()}`)
       set({ bookings: response.data.bookings, isLoading: false })
     } catch (err: any) {
       set({ error: err.response?.data?.error || "Failed to fetch bookings", isLoading: false })
@@ -71,7 +71,7 @@ const useBookingStore = create<BookingState>((set, get) => ({
   updateBooking: async (id, data) => {
     set({ isLoading: true, error: null })
     try {
-      const response = await axiosInstance.patch(`/api/bookings/${id}`, data)
+      const response = await axiosInstance.patch(`/bookings/${id}`, data)
       const updatedBooking = response.data.booking
       set(state => ({
         bookings: state.bookings.map(b => b.id === id ? { ...b, ...updatedBooking } : b),
@@ -94,7 +94,7 @@ const useBookingStore = create<BookingState>((set, get) => ({
   deleteBooking: async (id) => {
     set({ isLoading: true, error: null })
     try {
-      await axiosInstance.delete(`/api/bookings/${id}`)
+      await axiosInstance.delete(`/bookings/${id}`)
       set(state => ({
         bookings: state.bookings.filter(b => b.id !== id),
         isLoading: false

@@ -1,24 +1,18 @@
 import axios from 'axios';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
 const axiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: `${API_URL}/api/admin`,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Add a request interceptor to handle any future token needs
 axiosInstance.interceptors.request.use(
-  (config) => {
-    // We are using cookies for auth, so axios will send them automatically 
-    // if withCredentials is true (though for the same domain it usually works).
-    // In Next.js App Router, cookies are automatically sent.
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (config) => config,
+  (error) => Promise.reject(error)
 );
 
 export const isAxiosError = axios.isAxiosError;

@@ -48,7 +48,7 @@ const useDashboardStore = create<DashboardState>((set) => ({
   fetchStats: async () => {
     set({ isLoading: true, error: null })
     try {
-      const response = await axiosInstance.get('/api/dashboard/stats')
+      const response = await axiosInstance.get('/dashboard/stats')
       set({
         metrics: response.data.metrics,
         topVenues: response.data.topVenues,

@@ -30,7 +30,7 @@ export const useAuthStore = create<AuthState>()(
       login: async (credentials) => {
         set({ isLoading: true, error: null })
         try {
-          const response = await axiosInstance.post('/api/auth/login', credentials)
+          const response = await axiosInstance.post('/auth/login', credentials)
           set({ 
             user: response.data.user, 
             isAuthenticated: true, 
@@ -49,7 +49,7 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         set({ isLoading: true })
         try {
-          await axiosInstance.post('/api/auth/logout')
+          await axiosInstance.post('/auth/logout')
         } catch (err) {
           console.error('Logout API call failed:', err)
         } finally {
