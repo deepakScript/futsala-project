@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router } from 'express';
 import {
   registerUser,
   loginUser,
@@ -7,17 +7,17 @@ import {
   savePassword,
   refreshAccessToken,
   getAllUsers,
-} from "../controllers/authController";
-import { verifyToken } from "../middlewares/verifyToken";
+} from '../controllers/authController';
+import { verifyToken } from '../middlewares/verifyToken';
 
 const router = Router();
 
-router.post("/register", registerUser);
-router.post("/login", loginUser);
-router.post("/forgot-password", forgotPassword);
-router.post("/otp-verification", otpVerification);
-router.post("/save-password", savePassword);
-router.post("/refresh-token", refreshAccessToken);
-router.get("/users", verifyToken, getAllUsers);
+router.post('/register', registerUser);
+router.post('/login', loginUser);
+router.post('/forgot-password', forgotPassword);
+router.post('/otp-verification', otpVerification);
+router.post('/save-password', savePassword);
+router.post('/refresh-token', refreshAccessToken);
+router.get('/users', verifyToken, getAllUsers);
 
 export default router;

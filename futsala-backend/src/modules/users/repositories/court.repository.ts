@@ -27,7 +27,12 @@ export class CourtRepository {
     });
   }
 
-  async findActiveCourtsWithAvailability(venueId: string, dayOfWeek: number, startOfDay: Date, endOfDay: Date) {
+  async findActiveCourtsWithAvailability(
+    venueId: string,
+    dayOfWeek: number,
+    startOfDay: Date,
+    endOfDay: Date
+  ) {
     return prisma.court.findMany({
       where: {
         venueId,

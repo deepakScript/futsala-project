@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from 'express';
 
 /**
  * Middleware factory that enforces role-based access control.
@@ -15,13 +15,13 @@ export const requireRole = (allowedRoles: string[]) => {
     const user = req.user;
 
     if (!user) {
-      res.status(401).json({ message: "Unauthorized: no user attached to request" });
+      res.status(401).json({ message: 'Unauthorized: no user attached to request' });
       return;
     }
 
     if (!allowedRoles.includes(user.role)) {
       res.status(403).json({
-        message: `Forbidden: requires one of [${allowedRoles.join(", ")}] role`,
+        message: `Forbidden: requires one of [${allowedRoles.join(', ')}] role`,
       });
       return;
     }

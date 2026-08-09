@@ -9,8 +9,8 @@ export interface CreateBookingDTO {
   userId: string;
   courtId: string;
   bookingDate: string; // ISO format
-  startTime: string;   // HH:MM
-  endTime: string;     // HH:MM
+  startTime: string; // HH:MM
+  endTime: string; // HH:MM
   notes?: string;
 }
 
@@ -47,19 +47,24 @@ export class BookingService {
     const endOfDay = new Date(bookingDate);
     endOfDay.setUTCDate(endOfDay.getUTCDate() + 1);
 
-    const courts = await this.courtRepo.findActiveCourtsWithAvailability(futsalId, dayOfWeek, startOfDay, endOfDay);
+    const courts = await this.courtRepo.findActiveCourtsWithAvailability(
+      futsalId,
+      dayOfWeek,
+      startOfDay,
+      endOfDay
+    );
 
     const flattenedAvailability: any[] = [];
 
     courts.forEach((court) => {
-      const bookedSlots = court.bookings.map(b => ({
+      const bookedSlots = court.bookings.map((b) => ({
         startTime: b.startTime,
-        endTime: b.endTime
+        endTime: b.endTime,
       }));
 
-      court.timeSlots.forEach(slot => {
+      court.timeSlots.forEach((slot) => {
         // Check if slot overlaps with any booking
-        const isBooked = bookedSlots.some(booked => {
+        const isBooked = bookedSlots.some((booked) => {
           return !(slot.endTime <= booked.startTime || slot.startTime >= booked.endTime);
         });
 
@@ -70,7 +75,7 @@ export class BookingService {
           startTime: slot.startTime,
           endTime: slot.endTime,
           price: court.pricePerHour,
-          isAvailable: !isBooked
+          isAvailable: !isBooked,
         });
       });
     });
@@ -78,7 +83,7 @@ export class BookingService {
     return {
       date: dateStr,
       dayOfWeek,
-      data: flattenedAvailability
+      data: flattenedAvailability,
     };
   }
 
@@ -108,7 +113,12 @@ export class BookingService {
     const otp = crypto.randomInt(100000, 999999).toString();
 
     // Check conflicts
-    const conflict = await this.bookingRepo.findConflicting(courtId, bookingDateObj, startTime, endTime);
+    const conflict = await this.bookingRepo.findConflicting(
+      courtId,
+      bookingDateObj,
+      startTime,
+      endTime
+    );
     if (conflict) {
       throw new AppError('Time slot is already booked', 409);
     }
@@ -170,7 +180,7 @@ export class BookingService {
     }
 
     const updatedBooking = await this.bookingRepo.update(bookingId, {
-      status: BookingStatus.CANCELLED
+      status: BookingStatus.CANCELLED,
     });
 
     // Publish event to Kafka
@@ -225,7 +235,13 @@ export class BookingService {
       updateData.totalPrice = totalHours * (booking as any).court.pricePerHour;
     }
 
-    const conflict = await this.bookingRepo.findConflicting(booking.courtId, newBookingDate, newStartTime, newEndTime, bookingId);
+    const conflict = await this.bookingRepo.findConflicting(
+      booking.courtId,
+      newBookingDate,
+      newStartTime,
+      newEndTime,
+      bookingId
+    );
     if (conflict) {
       throw new AppError('New time slot is already booked', 409);
     }
@@ -241,6 +257,6 @@ export class BookingService {
   private calculateHours(start: string, end: string): number {
     const [sh, sm] = start.split(':').map(Number);
     const [eh, em] = end.split(':').map(Number);
-    return ((eh * 60 + em) - (sh * 60 + sm)) / 60;
+    return (eh * 60 + em - (sh * 60 + sm)) / 60;
   }
 }

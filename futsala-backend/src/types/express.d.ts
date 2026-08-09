@@ -1,5 +1,5 @@
-import { AdminTokenPayload, SuperAdminTokenPayload } from "../utils/jwt";
-import { JwtPayload } from "jsonwebtoken";
+import { AdminTokenPayload, SuperAdminTokenPayload } from '../utils/jwt';
+import { JwtPayload } from 'jsonwebtoken';
 
 export interface DecodedUser extends JwtPayload {
   userId: string;
@@ -7,7 +7,7 @@ export interface DecodedUser extends JwtPayload {
   role: string;
 }
 
-declare module "express-serve-static-core" {
+declare module 'express-serve-static-core' {
   interface Request {
     /** Mobile app JWT user (Bearer / access token) */
     user?: DecodedUser;

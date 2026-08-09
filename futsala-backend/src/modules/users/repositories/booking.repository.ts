@@ -2,7 +2,13 @@ import prisma from '../../../config/prismaClient';
 import { BookingStatus, Prisma } from '@prisma/client';
 
 export class BookingRepository {
-  async findConflicting(courtId: string, bookingDate: Date, startTime: string, endTime: string, excludeId?: string) {
+  async findConflicting(
+    courtId: string,
+    bookingDate: Date,
+    startTime: string,
+    endTime: string,
+    excludeId?: string
+  ) {
     return prisma.booking.findFirst({
       where: {
         ...(excludeId && { id: { not: excludeId } }),
