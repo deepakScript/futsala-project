@@ -20,7 +20,7 @@ interface AdminState {
   deleteAdmin: (id: string) => Promise<void>
 }
 
-const useAdminStore = create<AdminState>((set, get) => ({
+const useAdminStore = create<AdminState>()((set, get) => ({
   admins: [],
   isLoading: false,
   error: null,
@@ -28,7 +28,7 @@ const useAdminStore = create<AdminState>((set, get) => ({
   fetchAdmins: async () => {
     set({ isLoading: true, error: null })
     try {
-      const response = await axiosInstance.get('/api/admins')
+      const response = await axiosInstance.get('/admins')
       set({ admins: response.data.admins, isLoading: false })
     } catch (err: any) {
       set({ error: err.response?.data?.error || "Failed to fetch admins", isLoading: false })
@@ -38,7 +38,7 @@ const useAdminStore = create<AdminState>((set, get) => ({
   createAdmin: async (data) => {
     set({ isLoading: true, error: null })
     try {
-      await axiosInstance.post('/api/admins', data)
+      await axiosInstance.post('/admins', data)
       get().fetchAdmins()
     } catch (err: any) {
       set({ error: err.response?.data?.error || "Failed to create admin", isLoading: false })
@@ -49,7 +49,7 @@ const useAdminStore = create<AdminState>((set, get) => ({
   updateAdmin: async (id, data) => {
     set({ isLoading: true, error: null })
     try {
-      await axiosInstance.patch(`/api/admins/${id}`, data)
+      await axiosInstance.patch(`/admins/${id}`, data)
       get().fetchAdmins()
     } catch (err: any) {
       set({ error: err.response?.data?.error || "Failed to update admin", isLoading: false })
@@ -60,7 +60,7 @@ const useAdminStore = create<AdminState>((set, get) => ({
   deleteAdmin: async (id) => {
     set({ isLoading: true, error: null })
     try {
-      await axiosInstance.delete(`/api/admins/${id}`)
+      await axiosInstance.delete(`/admins/${id}`)
       set((state) => ({
         admins: state.admins.filter((a) => a.id !== id),
         isLoading: false

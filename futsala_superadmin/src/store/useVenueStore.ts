@@ -69,7 +69,7 @@ const useVenueStore = create<VenueState>((set, get) => ({
   fetchVenues: async () => {
     set({ isLoading: true, error: null })
     try {
-      const response = await axiosInstance.get('/api/venues')
+      const response = await axiosInstance.get('/venues')
       set({ venues: response.data.venues, isLoading: false })
     } catch (err: any) {
       set({ error: err.response?.data?.error || "Failed to fetch venues", isLoading: false })
@@ -78,7 +78,7 @@ const useVenueStore = create<VenueState>((set, get) => ({
 
   fetchOwners: async () => {
     try {
-      const response = await axiosInstance.get('/api/users/owners')
+      const response = await axiosInstance.get('/users/owners')
       set({ owners: response.data.owners })
     } catch (err: any) {
       console.error("Failed to fetch owners")
@@ -88,7 +88,7 @@ const useVenueStore = create<VenueState>((set, get) => ({
   fetchVenueDetails: async (id) => {
     set({ isLoading: true, error: null, selectedVenue: null })
     try {
-      const response = await axiosInstance.get(`/api/venues/${id}`)
+      const response = await axiosInstance.get(`/venues/${id}`)
       set({ selectedVenue: response.data.venue, isLoading: false })
     } catch (err: any) {
       set({ error: err.response?.data?.error || "Failed to fetch venue details", isLoading: false })
@@ -98,7 +98,7 @@ const useVenueStore = create<VenueState>((set, get) => ({
   fetchVenueStats: async (id) => {
     set({ isLoading: true, error: null, venueStats: null })
     try {
-      const response = await axiosInstance.get(`/api/venues/${id}/stats`)
+      const response = await axiosInstance.get(`/venues/${id}/stats`)
       set({ venueStats: response.data, isLoading: false })
     } catch (err: any) {
       set({ error: err.response?.data?.error || "Failed to fetch venue stats", isLoading: false })
@@ -108,7 +108,7 @@ const useVenueStore = create<VenueState>((set, get) => ({
   createVenue: async (data) => {
     set({ isLoading: true, error: null })
     try {
-      await axiosInstance.post('/api/venues', data)
+      await axiosInstance.post('/venues', data)
       get().fetchVenues()
     } catch (err: any) {
       set({ error: err.response?.data?.error || "Failed to create venue", isLoading: false })
@@ -119,7 +119,7 @@ const useVenueStore = create<VenueState>((set, get) => ({
   updateVenue: async (id, data) => {
     set({ isLoading: true, error: null })
     try {
-      await axiosInstance.patch(`/api/venues/${id}`, data)
+      await axiosInstance.patch(`/venues/${id}`, data)
       get().fetchVenues()
       if (get().selectedVenue?.id === id) {
         get().fetchVenueDetails(id)
@@ -131,7 +131,7 @@ const useVenueStore = create<VenueState>((set, get) => ({
 
   toggleVenueStatus: async (id, currentStatus) => {
     try {
-      await axiosInstance.patch(`/api/venues/${id}`, { isActive: !currentStatus })
+      await axiosInstance.patch(`/venues/${id}`, { isActive: !currentStatus })
       set((state) => ({
         venues: state.venues.map((v) => 
           v.id === id ? { ...v, isActive: !currentStatus } : v
@@ -145,7 +145,7 @@ const useVenueStore = create<VenueState>((set, get) => ({
   deleteVenue: async (id) => {
     set({ isLoading: true, error: null })
     try {
-      await axiosInstance.delete(`/api/venues/${id}`)
+      await axiosInstance.delete(`/venues/${id}`)
       set((state) => ({
         venues: state.venues.filter((v) => v.id !== id),
         isLoading: false

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axiosInstance from "@/lib/axios";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -50,7 +50,7 @@ export default function ReportsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get("/api/reports");
+        const response = await axiosInstance.get("/reports");
         setData(response.data);
       } catch (error) {
         console.error("Error fetching reports:", error);

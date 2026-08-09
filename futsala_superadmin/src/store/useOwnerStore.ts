@@ -47,7 +47,7 @@ const useOwnerStore = create<OwnerState>((set, get) => ({
   fetchOwners: async () => {
     set({ isLoading: true, error: null })
     try {
-      const response = await axiosInstance.get('/api/owners')
+      const response = await axiosInstance.get('/owners')
       set({ owners: response.data.owners, isLoading: false })
     } catch (err: any) {
       set({ error: err.response?.data?.error || "Failed to fetch owners", isLoading: false })
@@ -57,7 +57,7 @@ const useOwnerStore = create<OwnerState>((set, get) => ({
   createOwner: async (data: any) => {
     set({ isLoading: true, error: null })
     try {
-      await axiosInstance.post('/api/owners', data)
+      await axiosInstance.post('/owners', data)
       get().fetchOwners()
     } catch (err: any) {
       set({ error: err.response?.data?.error || "Failed to create owner", isLoading: false })
@@ -68,7 +68,7 @@ const useOwnerStore = create<OwnerState>((set, get) => ({
   fetchOwnerDetails: async (id: string) => {
     set({ isLoading: true, error: null, selectedOwner: null })
     try {
-      const response = await axiosInstance.get(`/api/owners/${id}`)
+      const response = await axiosInstance.get(`/owners/${id}`)
       set({ selectedOwner: response.data.owner, isLoading: false })
     } catch (err: any) {
       set({ error: err.response?.data?.error || "Failed to fetch owner details", isLoading: false })
@@ -78,7 +78,7 @@ const useOwnerStore = create<OwnerState>((set, get) => ({
   fetchOwnerPerformance: async (id: string) => {
     set({ isLoading: true, error: null })
     try {
-      const response = await axiosInstance.get(`/api/owners/${id}/performance`)
+      const response = await axiosInstance.get(`/owners/${id}/performance`)
       set({ ownerPerformance: response.data.performance, isLoading: false })
     } catch (err: any) {
       set({ error: err.response?.data?.error || "Failed to fetch performance stats", isLoading: false })
@@ -88,7 +88,7 @@ const useOwnerStore = create<OwnerState>((set, get) => ({
   updateOwner: async (id: string, data: any) => {
     set({ isLoading: true, error: null })
     try {
-      const response = await axiosInstance.patch(`/api/owners/${id}`, data)
+      const response = await axiosInstance.patch(`/owners/${id}`, data)
       const updatedOwner = response.data.owner
       
       set(state => ({
@@ -109,7 +109,7 @@ const useOwnerStore = create<OwnerState>((set, get) => ({
   deleteOwner: async (id: string) => {
     set({ isLoading: true, error: null })
     try {
-      await axiosInstance.delete(`/api/owners/${id}`)
+      await axiosInstance.delete(`/owners/${id}`)
       set(state => ({
         owners: state.owners.filter(o => o.id !== id),
         selectedOwner: state.selectedOwner?.id === id ? null : state.selectedOwner,

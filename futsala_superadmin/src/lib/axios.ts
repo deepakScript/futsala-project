@@ -1,24 +1,18 @@
 import axios from 'axios'
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+
 const axiosInstance = axios.create({
-  baseURL: typeof window === 'undefined' 
-    ? (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000') 
-    : '',
+  baseURL: `${API_URL}/api/superadmin`,
   headers: {
     'Content-Type': 'application/json',
   },
   withCredentials: true,
 })
 
-// Add interceptors if needed (e.g., for auth tokens)
 axiosInstance.interceptors.request.use(
-  (config) => {
-    // You can add logic here to inject tokens from local storage or cookies
-    return config
-  },
-  (error) => {
-    return Promise.reject(error)
-  }
+  (config) => config,
+  (error) => Promise.reject(error)
 )
 
 export default axiosInstance
