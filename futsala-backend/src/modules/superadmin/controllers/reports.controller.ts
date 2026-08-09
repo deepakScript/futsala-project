@@ -1,12 +1,6 @@
-import { Request, Response } from "express";
-import {
-  format,
-  subMonths,
-  startOfMonth,
-  endOfMonth,
-  eachMonthOfInterval,
-} from "date-fns";
-import prisma from "../../../config/prismaClient";
+import { Request, Response } from 'express';
+import { format, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
+import prisma from '../../../config/prismaClient';
 
 export const getReports = async (_req: Request, res: Response) => {
   try {
@@ -24,7 +18,7 @@ export const getReports = async (_req: Request, res: Response) => {
         const newUsers = await prisma.user.count({
           where: {
             createdAt: { gte: startDate, lte: endDate },
-            role: "CUSTOMER",
+            role: 'CUSTOMER',
           },
         });
 
@@ -33,7 +27,7 @@ export const getReports = async (_req: Request, res: Response) => {
         });
 
         return {
-          month: format(month, "MMM"),
+          month: format(month, 'MMM'),
           users: newUsers,
           venues: newVenues,
         };
@@ -47,7 +41,7 @@ export const getReports = async (_req: Request, res: Response) => {
 
         const revenue = await prisma.booking.aggregate({
           where: {
-            paymentStatus: "PAID",
+            paymentStatus: 'PAID',
             updatedAt: { gte: startDate, lte: endDate },
           },
           _sum: { totalPrice: true },
@@ -55,7 +49,7 @@ export const getReports = async (_req: Request, res: Response) => {
         });
 
         return {
-          month: format(month, "MMM"),
+          month: format(month, 'MMM'),
           revenue: revenue._sum.totalPrice || 0,
           bookings: revenue._count._all || 0,
         };
@@ -67,7 +61,7 @@ export const getReports = async (_req: Request, res: Response) => {
         courts: {
           include: {
             bookings: {
-              where: { paymentStatus: "PAID" },
+              where: { paymentStatus: 'PAID' },
               select: { totalPrice: true },
             },
             _count: { select: { bookings: true } },
@@ -78,15 +72,9 @@ export const getReports = async (_req: Request, res: Response) => {
 
     const venuePerformance = venues
       .map((venue) => {
-        const totalBookings = venue.courts.reduce(
-          (acc, court) => acc + court._count.bookings,
-          0
-        );
+        const totalBookings = venue.courts.reduce((acc, court) => acc + court._count.bookings, 0);
         const revenue = venue.courts.reduce((acc, court) => {
-          return (
-            acc +
-            court.bookings.reduce((sum, booking) => sum + booking.totalPrice, 0)
-          );
+          return acc + court.bookings.reduce((sum, booking) => sum + booking.totalPrice, 0);
         }, 0);
 
         return { name: venue.name, totalBookings, revenue };
@@ -96,20 +84,18 @@ export const getReports = async (_req: Request, res: Response) => {
 
     const totalBookings = await prisma.booking.count();
     const cancelledBookings = await prisma.booking.count({
-      where: { status: "CANCELLED" },
+      where: { status: 'CANCELLED' },
     });
 
     const cancellationRate =
-      totalBookings > 0
-        ? ((cancelledBookings / totalBookings) * 100).toFixed(1)
-        : 0;
+      totalBookings > 0 ? ((cancelledBookings / totalBookings) * 100).toFixed(1) : 0;
 
     const totalUsers = await prisma.user.count({
-      where: { role: "CUSTOMER" },
+      where: { role: 'CUSTOMER' },
     });
     const totalVenues = await prisma.venue.count();
     const totalRevenueResult = await prisma.booking.aggregate({
-      where: { paymentStatus: "PAID" },
+      where: { paymentStatus: 'PAID' },
       _sum: { totalPrice: true },
     });
     const totalRevenue = totalRevenueResult._sum.totalPrice || 0;
@@ -122,7 +108,7 @@ export const getReports = async (_req: Request, res: Response) => {
       stats: { totalUsers, totalVenues, totalRevenue, totalBookings },
     });
   } catch (error) {
-    console.error("Error fetching reports data:", error);
-    return res.status(500).json({ error: "Failed to fetch reports data" });
+    console.error('Error fetching reports data:', error);
+    return res.status(500).json({ error: 'Failed to fetch reports data' });
   }
 };

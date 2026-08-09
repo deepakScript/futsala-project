@@ -20,7 +20,7 @@ export const startBookingConsumer = async () => {
         try {
           const event = JSON.parse(message.value.toString());
           console.log(`[Kafka Consumer] Received ${event.eventType} on partition ${partition}`);
-          
+
           // Here you can add specific logic based on the eventType
           switch (event.eventType) {
             case 'BOOKING_CREATED':

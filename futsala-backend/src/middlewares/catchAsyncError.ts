@@ -1,9 +1,4 @@
-import { Request, Response, NextFunction, RequestHandler } from "express";
+import { asyncHandler } from './asyncHandler';
 
-export const catchAsyncError = (
-  theFunction: (req: Request, res: Response, next: NextFunction) => Promise<any>
-): RequestHandler => {
-  return (req, res, next) => {
-    Promise.resolve(theFunction(req, res, next)).catch(next);
-  };
-};
+export const catchAsyncError = asyncHandler;
+export default catchAsyncError;

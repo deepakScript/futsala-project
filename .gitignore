@@ -1,7 +1,9 @@
-# Build artifacts
+# Build artifacts & Dependencies
 node_modules/
 dist/
 build/
+.next/
+out/
 .dart_tool/
 .pub/
 .flutter-plugins
@@ -12,9 +14,19 @@ futsala_app/android/app/build/
 *.keystore
 *.jks
 
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+!.env.example
+
 # Logs
 *.log
+logs/
 
 # OS files
 .DS_Store
 Thumbs.db
+.idea/
+.vscode/

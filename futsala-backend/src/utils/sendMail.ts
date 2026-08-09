@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import nodemailer from 'nodemailer';
 
 interface SendMailOptions {
   to: string;
@@ -9,7 +9,7 @@ interface SendMailOptions {
 const sendMail = async ({ to, subject, html }: SendMailOptions): Promise<void> => {
   const transporter = nodemailer.createTransport({
     host: process.env.MAIL_HOST,
-    port: parseInt(process.env.MAIL_PORT || "587", 10),
+    port: parseInt(process.env.MAIL_PORT || '587', 10),
     secure: false, // Use true for port 465, false for others (e.g., 587)
     auth: {
       user: process.env.MAIL_USER,
@@ -31,9 +31,10 @@ const sendMail = async ({ to, subject, html }: SendMailOptions): Promise<void> =
     await transporter.sendMail(mailOptions);
     console.log(`✅ Email sent to ${to}`);
   } catch (error) {
-    console.error("❌ Failed to send email:", error);
+    console.error('❌ Failed to send email:', error);
     throw error;
   }
 };
 
+export const sendEmail = sendMail;
 export default sendMail;
