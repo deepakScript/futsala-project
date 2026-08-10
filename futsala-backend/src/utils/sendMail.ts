@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import env from '../config/env.config';
 
 interface SendMailOptions {
   to: string;
@@ -8,12 +9,12 @@ interface SendMailOptions {
 
 const sendMail = async ({ to, subject, html }: SendMailOptions): Promise<void> => {
   const transporter = nodemailer.createTransport({
-    host: process.env.MAIL_HOST,
-    port: parseInt(process.env.MAIL_PORT || '587', 10),
+    host: env.MAIL_HOST,
+    port: env.MAIL_PORT,
     secure: false, // Use true for port 465, false for others (e.g., 587)
     auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASSWORD?.replace(/\s+/g, ''), // Remove any spaces from App Password
+      user: env.MAIL_USER,
+      pass: env.MAIL_PASSWORD?.replace(/\s+/g, ''), // Remove any spaces from App Password
     },
     tls: {
       rejectUnauthorized: false, // only for development / Mailtrap
@@ -21,7 +22,7 @@ const sendMail = async ({ to, subject, html }: SendMailOptions): Promise<void> =
   });
 
   const mailOptions = {
-    from: `Support <${process.env.MAIL_USER}>`,
+    from: `Support <${env.MAIL_USER}>`,
     to,
     subject,
     html,

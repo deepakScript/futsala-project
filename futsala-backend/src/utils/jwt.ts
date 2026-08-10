@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
+import env from '../config/env.config';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = env.JWT_SECRET;
 
 export interface AdminTokenPayload {
   id: string;
@@ -31,6 +32,6 @@ export const verifyToken = <T>(token: string): T | null => {
 export const cookieOptions = {
   httpOnly: true,
   path: '/',
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'lax') as 'lax' | 'none' | 'strict',
+  secure: env.NODE_ENV === 'production',
+  sameSite: (env.NODE_ENV === 'production' ? 'none' : 'lax') as 'lax' | 'none' | 'strict',
 };

@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { paymentRepository } from '../repositories/payment.repository';
 import { AppError, ErrorCode } from '../../../utils/customError';
+import env from '../../../config/env.config';
 
 const PAYMENT_METHOD = 'KHALTI';
-const KHALTI_BASE_URL = process.env.KHALTI_BASE_URL || 'https://a.khalti.com/api/v2';
-const KHALTI_SECRET_KEY = process.env.KHALTI_SECRET_KEY || '97fbe616f94b4b0cab1a443dfa116206';
+const KHALTI_BASE_URL = env.KHALTI_BASE_URL;
+const KHALTI_SECRET_KEY = env.KHALTI_SECRET_KEY;
 
 export class PaymentService {
   async initiatePayment(userId: string, bookingId: string, returnUrl?: string) {
@@ -23,8 +24,8 @@ export class PaymentService {
     const purchaseOrderId = `ORDER-${Date.now()}`;
     const requestBody = {
       return_url:
-        returnUrl || `${process.env.FRONTEND_URL || 'http://localhost:5000'}/payment/success`,
-      website_url: process.env.FRONTEND_URL || 'http://localhost:5000',
+        returnUrl || `${env.FRONTEND_URL}/payment/success`,
+      website_url: env.FRONTEND_URL,
       amount: Math.round(booking.totalPrice * 100),
       purchase_order_id: purchaseOrderId,
       purchase_order_name: `Booking for ${booking.court.venue.name} - ${booking.court.name}`,

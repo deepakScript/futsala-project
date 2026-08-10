@@ -1,11 +1,11 @@
 import { Pool } from 'pg';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import env from './env.config';
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // Neon requires SSL
+  connectionString: env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: env.NODE_ENV === 'production',
+  },
   max: 10, // Limit connections on free tier
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,

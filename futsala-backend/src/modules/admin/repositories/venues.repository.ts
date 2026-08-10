@@ -1,5 +1,5 @@
 import prisma from '../../../config/prismaClient';
-import { BookingStatus } from '@prisma/client';
+import { Prisma, BookingStatus } from '@prisma/client';
 
 export class AdminVenueRepository {
   async findByOwnerId(ownerId: string) {
@@ -7,7 +7,7 @@ export class AdminVenueRepository {
       where: { ownerId },
       include: { courts: true },
     });
-  }
+  } 
 
   async update(
     id: string,
@@ -72,7 +72,7 @@ export class AdminBookingRepository {
   }) {
     const { ownerId, status, search, startDate, endDate } = params;
 
-    const where: Record<string, unknown> = {
+    const where: Prisma.BookingWhereInput = {
       court: { venue: { ownerId } },
     };
 
@@ -94,7 +94,7 @@ export class AdminBookingRepository {
     }
 
     return prisma.booking.findMany({
-      where: where as Parameters<typeof prisma.booking.findMany>[0]['where'],
+      where,
       include: {
         user: { select: { fullName: true, email: true, phoneNumber: true } },
         court: { include: { venue: { select: { name: true } } } },

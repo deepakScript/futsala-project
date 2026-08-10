@@ -1,18 +1,14 @@
 import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
-import path from 'path';
-
-// Load environment variables from .env file
-dotenv.config({ path: path.join(__dirname, '../.env') });
+import env from './config/env.config';
 
 const testEmail = async () => {
   console.log('Testing Email Configuration...');
   console.log('--------------------------------');
 
-  const host = process.env.MAIL_HOST;
-  const port = process.env.MAIL_PORT;
-  const user = process.env.MAIL_USER;
-  const pass = process.env.MAIL_PASSWORD;
+  const host = env.MAIL_HOST;
+  const port = env.MAIL_PORT;
+  const user = env.MAIL_USER;
+  const pass = env.MAIL_PASSWORD;
 
   console.log(`MAIL_HOST: ${host}`);
   console.log(`MAIL_PORT: ${port}`);
@@ -30,7 +26,7 @@ const testEmail = async () => {
 
   const transporter = nodemailer.createTransport({
     host: host,
-    port: parseInt(port || '587', 10),
+    port: typeof port === 'number' ? port : parseInt(port || '587', 10),
     secure: false, // true for 465, false for other ports
     auth: {
       user: user,

@@ -3,6 +3,7 @@ import pino from 'pino';
 import pinoHttp from 'pino-http';
 import path from 'path';
 import fs from 'fs';
+import env from '../config/env.config';
 
 // Ensure logs directory exists
 const logDir = path.join(process.cwd(), 'logs');
@@ -10,7 +11,7 @@ if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });
 }
 
-const isDev = process.env.NODE_ENV !== 'production';
+const isDev = env.NODE_ENV !== 'production';
 
 // Configuration for transports (daily rolling files & console pretty print)
 const targets: any[] = [
@@ -57,8 +58,8 @@ const transport = pino.transport({ targets });
 
 export const logger = pino(
   {
-    level: process.env.LOG_LEVEL || 'info',
-    base: { env: process.env.NODE_ENV || 'development' },
+    level: env.LOG_LEVEL,
+    base: { env: env.NODE_ENV },
     timestamp: pino.stdTimeFunctions.isoTime,
   },
   transport

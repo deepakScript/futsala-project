@@ -1,8 +1,8 @@
 import express, { Application, Request, Response } from 'express';
-import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import pool from './config/db';
+import env from './config/env.config';
 import userRoutes from './modules/users/routes';
 import adminRoutes from './modules/admin/routes';
 import superadminRoutes from './modules/superadmin/routes';
@@ -10,14 +10,12 @@ import { startBookingConsumer } from './utils/kafka/consumers/bookingConsumer';
 import { logger, httpLogger } from './utils/logger';
 import { globalErrorHandler } from './middlewares/errorHandler';
 
-dotenv.config();
-
 const app: Application = express();
 
 const allowedOrigins = [
-  process.env.ADMIN_URL || 'http://localhost:3000',
-  process.env.SUPERADMIN_URL || 'http://localhost:3001',
-  process.env.FLUTTER_WEB_URL,
+  env.ADMIN_URL,
+  env.SUPERADMIN_URL,
+  env.FLUTTER_WEB_URL,
 ].filter(Boolean) as string[];
 
 app.use(
@@ -63,7 +61,7 @@ app.get('/', (_req: Request, res: Response) => {
 
 app.use(globalErrorHandler);
 
-const PORT = process.env.PORT ?? 5000;
+const PORT = env.PORT;
 
 app.listen(PORT, async () => {
   logger.info(`Server running on port ${PORT}`);
