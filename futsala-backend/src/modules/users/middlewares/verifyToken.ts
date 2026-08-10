@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { DecodedUser } from '../../../types/express';
+import env from '../../../config/env.config';
 
-const JWT_SECRET = process.env.JWT_ACCESS_SECRET || 'your-default-secret-key';
+const JWT_SECRET = env.JWT_ACCESS_SECRET;
 
 export const verifyToken = (req: Request, res: Response, next: NextFunction): void => {
   const authHeader = req.header('Authorization');

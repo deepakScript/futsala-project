@@ -1,4 +1,5 @@
 import prisma from '../../../config/prismaClient';
+import { PaymentStatus } from '@prisma/client';
 
 export class SuperAdminBookingsRepository {
   async findAll(params: {
@@ -55,7 +56,7 @@ export class SuperAdminBookingsRepository {
     });
   }
 
-  async updatePaymentStatus(paymentId: string, status: string) {
+  async updatePaymentStatus(paymentId: string, status: PaymentStatus) {
     return prisma.payment.update({ where: { id: paymentId }, data: { status } });
   }
 

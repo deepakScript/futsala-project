@@ -1,13 +1,14 @@
 import { Request, Response } from 'express';
 import { authService } from '../services/auth.service';
 import { asyncHandler } from '../../../middlewares/asyncHandler';
+import env from '../../../config/env.config';
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
   const result = await authService.register(req.body);
 
   res.cookie('refreshToken', result.refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: env.NODE_ENV === 'production',
     sameSite: 'strict',
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
@@ -28,7 +29,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
   res.cookie('refreshToken', result.refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: env.NODE_ENV === 'production',
     sameSite: 'strict',
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
@@ -46,7 +47,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 export const logout = asyncHandler(async (_req: Request, res: Response) => {
   res.clearCookie('refreshToken', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: env.NODE_ENV === 'production',
     sameSite: 'strict',
   });
 
@@ -62,7 +63,7 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
 
   res.cookie('refreshToken', result.refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: env.NODE_ENV === 'production',
     sameSite: 'strict',
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });

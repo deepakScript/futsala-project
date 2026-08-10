@@ -1,10 +1,11 @@
 import { PrismaClient } from '@prisma/client';
+import env from './env.config';
 
 const prisma = new PrismaClient({
   log: ['query', 'info', 'warn', 'error'],
   datasources: {
     db: {
-      url: process.env.DATABASE_URL,
+      url: env.DATABASE_URL,
     },
   },
 });
@@ -17,9 +18,6 @@ prisma
   })
   .catch((error: any) => {
     console.error('❌ Failed to connect to database (Prisma):', error.message);
-    if (error.code === 'P1001') {
-      console.error('💡 Tip: Make sure your database server is running and accessible.');
-    }
   });
 
 // Graceful shutdown

@@ -6,6 +6,7 @@ import { AppError, ErrorCode } from '../../../utils/customError';
 import { sendEmail } from '../../../utils/sendMail';
 import crypto from 'crypto';
 import { UserRole } from '@prisma/client';
+import env from '../../../config/env.config';
 
 export interface AuthTokensResponse {
   user: UserResponseDto;
@@ -68,7 +69,7 @@ export class AuthService {
     try {
       const decoded = jwt.verify(
         token,
-        process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key'
+        env.JWT_REFRESH_SECRET
       ) as { userId: string; email: string; role: UserRole };
 
       const user = await authRepository.findById(decoded.userId);
@@ -105,7 +106,7 @@ export class AuthService {
       expiresAt,
     });
 
-    const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+    const resetUrl = `${env.CLIENT_URL}/reset-password?token=${resetToken}`;
     await sendEmail({
       to: user.email,
       subject: 'Password Reset Request',
@@ -137,7 +138,7 @@ export class AuthService {
   private generateAccessToken(userId: string, email: string, role: UserRole): string {
     return jwt.sign(
       { userId, email, role, type: 'access' },
-      process.env.JWT_ACCESS_SECRET || 'your-default-secret-key',
+      env.JWT_ACCESS_SECRET,
       { expiresIn: '1d' }
     );
   }
@@ -145,7 +146,7 @@ export class AuthService {
   private generateRefreshToken(userId: string, email: string, role: UserRole): string {
     return jwt.sign(
       { userId, email, role, type: 'refresh' },
-      process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key',
+      env.JWT_REFRESH_SECRET,
       { expiresIn: '7d' }
     );
   }

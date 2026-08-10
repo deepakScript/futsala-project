@@ -42,10 +42,11 @@ export class SuperAdminVenuesRepository {
         description: data.description || '',
         address: data.address,
         city: data.city,
-        phoneNumber: data.phoneNumber,
+        phoneNumber: data.phoneNumber || '',
         ownerId: data.ownerId,
         amenities: data.amenities || [],
         images: data.images || [],
+        tenantId: '',
         isActive: true,
       },
     });

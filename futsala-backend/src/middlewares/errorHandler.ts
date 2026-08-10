@@ -2,6 +2,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError, ErrorCode } from '../utils/customError';
 import { logger } from '../utils/logger';
+import env from '../config/env.config';
 
 export const globalErrorHandler = (
   err: Error & { statusCode?: number; errorCode?: ErrorCode; details?: unknown; code?: string },
@@ -42,7 +43,7 @@ export const globalErrorHandler = (
     statusCode,
     errorCode,
     message,
-    details: process.env.NODE_ENV === 'development' ? details || err.stack : details,
+    details: env.NODE_ENV === 'development' ? details || err.stack : details,
   });
 };
 
