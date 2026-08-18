@@ -2,6 +2,10 @@ import prisma from '../../../config/prismaClient';
 
 export class SuperAdminDashboardRepository {
   async getPlatformStats() {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
     const [
       totalVenues,
       activeVenueOwners,
@@ -10,9 +14,10 @@ export class SuperAdminDashboardRepository {
       todayBookings,
       pendingApprovals,
       venuesWithCourts,
+      recentBookings,
     ] = await Promise.all([
       prisma.venue.count(),
-      prisma.user.count({ where: { role: 'VENUE_OWNER' } }),
+      prisma.user.count({ where: { role: 'TENANT_ADMIN' } }),
       prisma.booking.count(),
       prisma.booking.aggregate({
         _sum: { totalPrice: true },
@@ -23,7 +28,21 @@ export class SuperAdminDashboardRepository {
       }),
       prisma.venue.count({ where: { isActive: false } }),
       prisma.venue.findMany({
-        include: { courts: { select: { _count: { select: { bookings: true } } } } },
+        include: {
+          courts: {
+            include: {
+              bookings: {
+                where: { paymentStatus: 'PAID' },
+                select: { totalPrice: true },
+              },
+              _count: { select: { bookings: true } },
+            },
+          },
+        },
+      }),
+      prisma.booking.findMany({
+        where: { createdAt: { gte: sevenDaysAgo } },
+        select: { createdAt: true },
       }),
     ]);
 
@@ -35,6 +54,7 @@ export class SuperAdminDashboardRepository {
       todayBookings,
       pendingApprovals,
       venuesWithCourts,
+      recentBookings,
     };
   }
 }

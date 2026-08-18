@@ -33,14 +33,26 @@ interface PayoutInfo {
   netPayout: number
 }
 
+interface CursorPagination {
+  nextCursor: string | null
+  hasNextPage: boolean
+  limit: number
+}
+
 interface PaymentState {
   transactions: Transaction[]
+  pagination: CursorPagination
   stats: PaymentStats | null
   payouts: PayoutInfo[]
   isLoading: boolean
   error: string | null
   
-  fetchTransactions: (filters?: { status?: string; method?: string }) => Promise<void>
+  fetchTransactions: (filters?: {
+    status?: string
+    method?: string
+    cursor?: string
+    limit?: number
+  }) => Promise<void>
   fetchStats: () => Promise<void>
   fetchPayouts: () => Promise<void>
   processRefund: (bookingId: string) => Promise<void>
@@ -48,6 +60,11 @@ interface PaymentState {
 
 const usePaymentStore = create<PaymentState>((set, get) => ({
   transactions: [],
+  pagination: {
+    nextCursor: null,
+    hasNextPage: false,
+    limit: 10,
+  },
   stats: null,
   payouts: [],
   isLoading: false,
@@ -59,9 +76,15 @@ const usePaymentStore = create<PaymentState>((set, get) => ({
       const params = new URLSearchParams()
       if (filters?.status) params.append('status', filters.status)
       if (filters?.method) params.append('method', filters.method)
+      if (filters?.cursor) params.append('cursor', filters.cursor)
+      if (filters?.limit) params.append('limit', String(filters.limit))
       
       const response = await axiosInstance.get(`/payments?${params.toString()}`)
-      set({ transactions: response.data.payments, isLoading: false })
+      set({
+        transactions: response.data.payments,
+        pagination: response.data.pagination,
+        isLoading: false,
+      })
     } catch (err: any) {
       set({ error: err.response?.data?.error || "Failed to fetch transactions", isLoading: false })
     }

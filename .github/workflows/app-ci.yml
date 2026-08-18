@@ -1,0 +1,49 @@
+name: Flutter App CI
+
+on:
+  push:
+    paths:
+      - 'futsala_app/**'
+      - '.github/workflows/app-ci.yml'
+  pull_request:
+    paths:
+      - 'futsala_app/**'
+      - '.github/workflows/app-ci.yml'
+
+jobs:
+  flutter-ci:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: futsala_app
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+          cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
+          cache-path: "${{ runner.tool_cache }}/flutter"
+
+      - name: Get Dependencies
+        run: flutter pub get
+
+      - name: Run Linter / Analyzer
+        run: flutter analyze
+
+      - name: Run Tests
+        run: flutter test
+
+      - name: Build Debug APK
+        run: flutter build apk --debug

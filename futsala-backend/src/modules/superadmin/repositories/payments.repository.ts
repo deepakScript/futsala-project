@@ -1,7 +1,7 @@
 import prisma from '../../../config/prismaClient';
 
 export class SuperAdminPaymentsRepository {
-  async listAll(params: { status?: string; method?: string }) {
+  async listAll(params: { cursor?: string; limit: number; status?: string; method?: string }) {
     const where: Record<string, string> = {};
     if (params.status) where.status = params.status;
     if (params.method) where.paymentMethod = params.method;
@@ -16,7 +16,9 @@ export class SuperAdminPaymentsRepository {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: params.limit + 1,
+      ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
     });
   }
 

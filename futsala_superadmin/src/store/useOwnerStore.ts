@@ -21,14 +21,21 @@ interface PerformanceData {
   venueBreakdown: any[]
 }
 
+interface CursorPagination {
+  nextCursor: string | null
+  hasNextPage: boolean
+  limit: number
+}
+
 interface OwnerState {
   owners: Owner[]
+  pagination: CursorPagination
   selectedOwner: Owner | null
   ownerPerformance: PerformanceData | null
   isLoading: boolean
   error: string | null
   
-  fetchOwners: () => Promise<void>
+  fetchOwners: (params?: { cursor?: string; limit?: number; search?: string }) => Promise<void>
   fetchOwnerDetails: (id: string) => Promise<void>
   fetchOwnerPerformance: (id: string) => Promise<void>
   createOwner: (data: any) => Promise<void>
@@ -39,18 +46,32 @@ interface OwnerState {
 
 const useOwnerStore = create<OwnerState>((set, get) => ({
   owners: [],
+  pagination: {
+    nextCursor: null,
+    hasNextPage: false,
+    limit: 10,
+  },
   selectedOwner: null,
   ownerPerformance: null,
   isLoading: false,
   error: null,
 
-  fetchOwners: async () => {
+  fetchOwners: async (params) => {
     set({ isLoading: true, error: null })
     try {
-      const response = await axiosInstance.get('/owners')
-      set({ owners: response.data.owners, isLoading: false })
+      const query = new URLSearchParams()
+      if (params?.cursor) query.append('cursor', params.cursor)
+      if (params?.limit) query.append('limit', String(params.limit))
+      if (params?.search) query.append('search', params.search)
+
+      const response = await axiosInstance.get(`/owners?${query.toString()}`)
+      set({
+        owners: response.data.owners,
+        pagination: response.data.pagination,
+        isLoading: false,
+      })
     } catch (err: any) {
-      set({ error: err.response?.data?.error || "Failed to fetch owners", isLoading: false })
+      set({ error: err.response?.data?.message || err.response?.data?.error || "Failed to fetch owners", isLoading: false })
     }
   },
 
@@ -58,10 +79,11 @@ const useOwnerStore = create<OwnerState>((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       await axiosInstance.post('/owners', data)
-      get().fetchOwners()
+      await get().fetchOwners({ limit: get().pagination.limit })
     } catch (err: any) {
-      set({ error: err.response?.data?.error || "Failed to create owner", isLoading: false })
-      throw err
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || "Failed to create owner"
+      set({ error: errorMsg, isLoading: false })
+      throw new Error(errorMsg)
     }
   },
 
@@ -71,7 +93,7 @@ const useOwnerStore = create<OwnerState>((set, get) => ({
       const response = await axiosInstance.get(`/owners/${id}`)
       set({ selectedOwner: response.data.owner, isLoading: false })
     } catch (err: any) {
-      set({ error: err.response?.data?.error || "Failed to fetch owner details", isLoading: false })
+      set({ error: err.response?.data?.message || err.response?.data?.error || "Failed to fetch owner details", isLoading: false })
     }
   },
 
@@ -81,7 +103,7 @@ const useOwnerStore = create<OwnerState>((set, get) => ({
       const response = await axiosInstance.get(`/owners/${id}/performance`)
       set({ ownerPerformance: response.data.performance, isLoading: false })
     } catch (err: any) {
-      set({ error: err.response?.data?.error || "Failed to fetch performance stats", isLoading: false })
+      set({ error: err.response?.data?.message || err.response?.data?.error || "Failed to fetch performance stats", isLoading: false })
     }
   },
 
@@ -97,8 +119,9 @@ const useOwnerStore = create<OwnerState>((set, get) => ({
         isLoading: false
       }))
     } catch (err: any) {
-      set({ error: err.response?.data?.error || "Failed to update owner", isLoading: false })
-      throw err
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || "Failed to update owner"
+      set({ error: errorMsg, isLoading: false })
+      throw new Error(errorMsg)
     }
   },
 
@@ -116,8 +139,9 @@ const useOwnerStore = create<OwnerState>((set, get) => ({
         isLoading: false
       }))
     } catch (err: any) {
-      set({ error: err.response?.data?.error || "Failed to delete owner", isLoading: false })
-      throw err
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || "Failed to delete owner"
+      set({ error: errorMsg, isLoading: false })
+      throw new Error(errorMsg)
     }
   }
 }))

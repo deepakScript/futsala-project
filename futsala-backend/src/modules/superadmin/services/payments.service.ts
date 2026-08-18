@@ -1,11 +1,13 @@
 import { superAdminPaymentsRepository } from '../repositories/payments.repository';
+import { buildCursorPage, CursorPaginationParams } from '../utils/pagination';
 
-const COMMISSION_RATE = 0.1;
+const COMMISSION_RATE = 0.02;
 const PLATFORM_FEE_RATE = 0.02;
 
 export class SuperAdminPaymentsService {
-  async listPayments(params: { status?: string; method?: string }) {
-    return superAdminPaymentsRepository.listAll(params);
+  async listPayments(params: CursorPaginationParams & { status?: string; method?: string }) {
+    const payments = await superAdminPaymentsRepository.listAll(params);
+    return buildCursorPage(payments, params.limit);
   }
 
   async getPaymentStats() {

@@ -2,6 +2,18 @@ import prisma from '../../../config/prismaClient';
 import { BookingStatus, Prisma } from '@prisma/client';
 
 export class BookingRepository {
+  async findByIdempotencyKey(key: string) {
+    return prisma.booking.findUnique({
+      where: { idempotencyKey: key },
+      include: {
+        court: {
+          include: { venue: true },
+        },
+        payment: true,
+      },
+    });
+  }
+
   async findConflicting(
     courtId: string,
     bookingDate: Date,

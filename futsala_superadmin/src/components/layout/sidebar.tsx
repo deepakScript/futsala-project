@@ -11,7 +11,7 @@ export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <div className="flex flex-col h-full bg-background border-r w-64 shrink-0 overflow-y-auto">
+    <div className="sticky top-0 flex h-screen flex-col overflow-y-auto bg-background border-r w-64 shrink-0">
       <div className="p-6 flex items-center gap-3">
         <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
           <Trophy className="h-5 w-5" />

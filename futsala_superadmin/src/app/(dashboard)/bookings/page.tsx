@@ -68,6 +68,7 @@ import { format } from "date-fns"
 export default function BookingsPage() {
   const { 
     bookings, 
+    pagination,
     isLoading, 
     fetchBookings, 
     cancelBooking, 
@@ -82,22 +83,48 @@ export default function BookingsPage() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [dateFilter, setDateFilter] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
+  const [pageSize, setPageSize] = useState(10)
+  const [currentCursor, setCurrentCursor] = useState<string | undefined>(undefined)
+  const [previousCursors, setPreviousCursors] = useState<(string | undefined)[]>([])
 
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false)
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null)
   const [bookingNote, setBookingNote] = useState("")
 
   useEffect(() => {
-    fetchBookings()
+    fetchBookings({ limit: pageSize })
     fetchVenues()
-  }, [fetchBookings, fetchVenues])
+  }, [fetchBookings, fetchVenues, pageSize])
+
+  const buildFilters = (cursor?: string) => ({
+    venueId: venueFilter === 'all' ? undefined : venueFilter,
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    date: dateFilter || undefined,
+    search: searchTerm || undefined,
+    limit: pageSize,
+    cursor,
+  })
+
+  const handleNextPage = async () => {
+    if (!pagination.nextCursor) return
+    setPreviousCursors((prev) => [...prev, currentCursor])
+    setCurrentCursor(pagination.nextCursor)
+    await fetchBookings(buildFilters(pagination.nextCursor))
+  }
+
+  const handlePreviousPage = async () => {
+    if (previousCursors.length === 0) return
+    const stack = [...previousCursors]
+    const prevCursor = stack.pop()
+    setPreviousCursors(stack)
+    setCurrentCursor(prevCursor)
+    await fetchBookings(buildFilters(prevCursor))
+  }
 
   const handleApplyFilters = () => {
-    fetchBookings({
-      venueId: venueFilter === "all" ? undefined : venueFilter,
-      status: statusFilter === "all" ? undefined : statusFilter,
-      date: dateFilter || undefined
-    })
+    setCurrentCursor(undefined)
+    setPreviousCursors([])
+    fetchBookings(buildFilters(undefined))
   }
 
   const handleOpenNoteDialog = (id: string, currentNote: string | null) => {
@@ -115,15 +142,6 @@ export default function BookingsPage() {
       alert("Failed to save note")
     }
   }
-
-  const filteredBookings = bookings.filter(booking => {
-    const matchesSearch = 
-      booking.user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.court.venue.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (booking.otp && booking.otp.toLowerCase().includes(searchTerm.toLowerCase()))
-    return matchesSearch
-  })
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -155,7 +173,7 @@ export default function BookingsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-           <Button variant="outline" size="sm" onClick={() => fetchBookings()} disabled={isLoading}>
+           <Button variant="outline" size="sm" onClick={() => fetchBookings(buildFilters(currentCursor))} disabled={isLoading}>
              <RefreshCcw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
              Refresh
            </Button>
@@ -244,7 +262,7 @@ export default function BookingsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredBookings.map((booking) => (
+              {bookings.map((booking) => (
                 <TableRow key={booking.id} className="group transition-colors hover:bg-muted/30">
                   <TableCell className="font-mono text-[10px] text-muted-foreground">
                     #{booking.id.split('-')[0].toUpperCase()}
@@ -330,7 +348,7 @@ export default function BookingsPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredBookings.length === 0 && !isLoading && (
+              {bookings.length === 0 && !isLoading && (
                 <TableRow>
                   <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                     No bookings found matching your criteria.
@@ -339,6 +357,29 @@ export default function BookingsPage() {
               )}
             </TableBody>
           </Table>
+          <div className="flex items-center justify-between border-t p-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Rows per page</span>
+              <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
+                <SelectTrigger className="h-8 w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={isLoading || previousCursors.length === 0}>
+                Previous
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleNextPage} disabled={isLoading || !pagination.hasNextPage}>
+                Next
+              </Button>
+            </div>
+          </div>
           {isLoading && (
             <div className="flex items-center justify-center p-8 bg-background/50 backdrop-blur-sm absolute inset-0 z-10">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />

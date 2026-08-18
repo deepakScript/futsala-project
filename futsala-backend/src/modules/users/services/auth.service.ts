@@ -3,10 +3,11 @@ import jwt from 'jsonwebtoken';
 import { authRepository } from '../repositories/auth.repository';
 import { toUserResponseDto, UserResponseDto } from '../dtos/user.dto';
 import { AppError, ErrorCode } from '../../../utils/customError';
-import { sendEmail } from '../../../utils/sendMail';
+import { redis } from '../../../config/redis';
 import crypto from 'crypto';
 import { UserRole } from '@prisma/client';
 import env from '../../../config/env.config';
+import { emailQueue } from '../../../utils/email/email.queue';
 
 export interface AuthTokensResponse {
   user: UserResponseDto;
@@ -23,7 +24,8 @@ export class AuthService {
     role?: UserRole;
     tenantId?: string;
   }): Promise<AuthTokensResponse> {
-    const existingUser = await authRepository.findByEmail(data.email);
+    const normalizedEmail = data.email.toLowerCase().trim();
+    const existingUser = await authRepository.findByEmail(normalizedEmail);
     if (existingUser) {
       throw new AppError('Email is already registered', 400, ErrorCode.USER_ALREADY_EXISTS);
     }
@@ -31,6 +33,7 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(data.password, 10);
     const user = await authRepository.createUser({
       ...data,
+      email: normalizedEmail,
       password: hashedPassword,
     });
 
@@ -45,7 +48,8 @@ export class AuthService {
   }
 
   async login(email: string, password: string): Promise<AuthTokensResponse> {
-    const user = await authRepository.findByEmail(email);
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await authRepository.findByEmail(normalizedEmail);
     if (!user) {
       throw new AppError('Invalid email or password', 401, ErrorCode.INVALID_CREDENTIALS);
     }
@@ -91,23 +95,23 @@ export class AuthService {
   }
 
   async requestPasswordReset(email: string): Promise<void> {
-    const user = await authRepository.findByEmail(email);
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await authRepository.findByEmail(normalizedEmail);
     if (!user) {
       throw new AppError('User with this email does not exist', 404, ErrorCode.NOT_FOUND);
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
     const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+    const ttlSeconds = 15 * 60; // 15 mins (900 seconds)
 
-    await authRepository.createPasswordResetToken({
-      userId: user.id,
-      token: hashedToken,
-      expiresAt,
-    });
+    // Store in Redis according to email
+    const resetData = JSON.stringify({ userId: user.id, email: normalizedEmail, token: hashedToken });
+    await redis.set(`reset_token:${normalizedEmail}`, resetData, 'EX', ttlSeconds);
+    await redis.set(`reset_token_lookup:${hashedToken}`, normalizedEmail, 'EX', ttlSeconds);
 
     const resetUrl = `${env.CLIENT_URL}/reset-password?token=${resetToken}`;
-    await sendEmail({
+    await emailQueue.add('password-reset', {
       to: user.email,
       subject: 'Password Reset Request',
       html: `<p>Click <a href="${resetUrl}">here</a> to reset your password. Token expires in 15 minutes.</p>`,
@@ -116,15 +120,29 @@ export class AuthService {
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-    const resetRecord = await authRepository.findPasswordResetToken(hashedToken);
+    const email = await redis.get(`reset_token_lookup:${hashedToken}`);
 
-    if (!resetRecord || resetRecord.expiresAt < new Date()) {
+    if (!email) {
+      throw new AppError('Invalid or expired reset token', 400, ErrorCode.BAD_REQUEST);
+    }
+
+    const resetDataStr = await redis.get(`reset_token:${email}`);
+    if (!resetDataStr) {
+      throw new AppError('Invalid or expired reset token', 400, ErrorCode.BAD_REQUEST);
+    }
+
+    const { userId, token: storedToken } = JSON.parse(resetDataStr);
+
+    if (storedToken !== hashedToken) {
       throw new AppError('Invalid or expired reset token', 400, ErrorCode.BAD_REQUEST);
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await authRepository.updatePassword(resetRecord.userId, hashedPassword);
-    await authRepository.deletePasswordResetToken(resetRecord.id);
+    await authRepository.updatePassword(userId, hashedPassword);
+
+    // Delete token from Redis
+    await redis.del(`reset_token_lookup:${hashedToken}`);
+    await redis.del(`reset_token:${email}`);
   }
 
   async getProfile(userId: string): Promise<UserResponseDto> {

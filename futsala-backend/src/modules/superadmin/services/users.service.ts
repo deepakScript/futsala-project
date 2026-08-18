@@ -1,10 +1,11 @@
 import { superAdminUsersRepository } from '../repositories/users.repository';
 import { AppError, ErrorCode } from '../../../utils/customError';
+import { buildCursorPage, CursorPaginationParams } from '../utils/pagination';
 
 export class SuperAdminUsersService {
-  async listCustomers() {
-    const users = await superAdminUsersRepository.listCustomers();
-    return users.map((user) => ({
+  async listCustomers(params: CursorPaginationParams & { search?: string }) {
+    const users = await superAdminUsersRepository.listCustomers(params);
+    const mappedUsers = users.map((user) => ({
       id: user.id,
       fullName: user.fullName,
       email: user.email,
@@ -13,6 +14,8 @@ export class SuperAdminUsersService {
       createdAt: user.createdAt,
       totalBookings: user._count.bookings,
     }));
+
+    return buildCursorPage(mappedUsers, params.limit);
   }
 
   async updateStatus(id: string, isVerified: unknown) {

@@ -15,7 +15,7 @@ async function main() {
       password: hashedPassword,
       fullName: 'Super Admin',
       phoneNumber: '+977-9800000000',
-      role: 'ADMIN',
+      role: 'SUPERADMIN',
     },
   });
 

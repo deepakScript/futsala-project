@@ -1,18 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import axios from '@/lib/axios';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useEffect } from 'react';
+import useTimeSlotStore from '@/lib/store/useTimeSlotStore';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { 
-  Clock, 
   Calendar as CalendarIcon, 
   Check, 
-  X,
   Loader2,
-  ChevronDown,
   Lock,
   Unlock,
   Building2
@@ -26,20 +22,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface TimeSlot {
-  id: string;
-  startTime: string;
-  endTime: string;
-  dayOfWeek: number;
-  isAvailable: boolean;
-}
-
-interface Court {
-  id: string;
-  name: string;
-  timeSlots: TimeSlot[];
-}
-
 const DAYS = [
   'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 ];
@@ -50,113 +32,30 @@ const TIME_OPTIONS = Array.from({ length: 24 }, (_, i) => {
 });
 
 export default function TimeSlotsPage() {
-  const [courts, setCourts] = useState<Court[]>([]);
-  const [selectedCourtId, setSelectedCourtId] = useState<string>('');
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  
-  // Local state for editing schedules
-  // Using a map of dayOfWeek -> { openTime, closeTime, blockedSlots }
-  const [schedules, setSchedules] = useState<Record<number, { 
-    openTime: string; 
-    closeTime: string; 
-    blockedSlots: string[] 
-  }>>({});
-
-  const fetchCourts = async () => {
-    try {
-      const response = await axios.get('/time-slots');
-      const fetchedCourts: Court[] = response.data.courts;
-      setCourts(fetchedCourts);
-      
-      if (fetchedCourts.length > 0) {
-        setSelectedCourtId(fetchedCourts[0].id);
-        initializeSchedules(fetchedCourts[0]);
-      }
-    } catch (error) {
-      toast.error('Failed to load court schedules');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const initializeSchedules = (court: Court) => {
-    const newSchedules: Record<number, { openTime: string; closeTime: string; blockedSlots: string[] }> = {};
-    
-    for (let day = 0; day < 7; day++) {
-      const daySlots = court.timeSlots.filter(s => s.dayOfWeek === day);
-      if (daySlots.length > 0) {
-        // Sort slots by time
-        const sortedSlots = [...daySlots].sort((a, b) => a.startTime.localeCompare(b.startTime));
-        newSchedules[day] = {
-          openTime: sortedSlots[0].startTime,
-          closeTime: sortedSlots[sortedSlots.length - 1].endTime,
-          blockedSlots: sortedSlots.filter(s => !s.isAvailable).map(s => s.startTime)
-        };
-      } else {
-        // Default values
-        newSchedules[day] = {
-          openTime: '08:00',
-          closeTime: '20:00',
-          blockedSlots: []
-        };
-      }
-    }
-    setSchedules(newSchedules);
-  };
+  const {
+    courts,
+    selectedCourtId,
+    schedules,
+    isLoading,
+    isSaving,
+    fetchCourts,
+    setSelectedCourtId,
+    updateDaySchedule,
+    toggleSlot,
+    saveSchedules,
+  } = useTimeSlotStore();
 
   useEffect(() => {
     fetchCourts();
-  }, []);
-
-  const handleCourtChange = (id: string) => {
-    setSelectedCourtId(id);
-    const court = courts.find(c => c.id === id);
-    if (court) {
-      initializeSchedules(court);
-    }
-  };
-
-  const updateDaySchedule = (day: number, data: Partial<{ openTime: string; closeTime: string; blockedSlots: string[] }>) => {
-    setSchedules(prev => ({
-      ...prev,
-      [day]: { ...prev[day], ...data }
-    }));
-  };
-
-  const toggleSlot = (day: number, slotTime: string) => {
-    const currentBlocked = schedules[day].blockedSlots;
-    const isCurrentlyBlocked = currentBlocked.includes(slotTime);
-    
-    if (isCurrentlyBlocked) {
-      updateDaySchedule(day, { blockedSlots: currentBlocked.filter(t => t !== slotTime) });
-    } else {
-      updateDaySchedule(day, { blockedSlots: [...currentBlocked, slotTime] });
-    }
-  };
+  }, [fetchCourts]);
 
   const handleSave = async () => {
-    if (!selectedCourtId) return;
-
-    setSaving(true);
     try {
-      const daySchedulesArray = Object.entries(schedules).map(([day, schedule]) => ({
-        dayOfWeek: parseInt(day),
-        ...schedule
-      }));
-
-      await axios.post('/time-slots', {
-        courtId: selectedCourtId,
-        daySchedules: daySchedulesArray
-      });
-
+      await saveSchedules();
       toast.success('Schedule updated successfully');
-      // Refresh data
       fetchCourts();
-    } catch (error) {
-      toast.error('Failed to update schedule');
-    } finally {
-      setSaving(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update schedule');
     }
   };
 
@@ -171,7 +70,7 @@ export default function TimeSlotsPage() {
     return slots;
   };
 
-  if (loading) {
+  if (isLoading && courts.length === 0) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -201,18 +100,18 @@ export default function TimeSlotsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Select value={selectedCourtId} onValueChange={handleCourtChange}>
+          <Select value={selectedCourtId} onValueChange={setSelectedCourtId}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select Court" />
             </SelectTrigger>
             <SelectContent>
-              {courts.map(court => (
+              {courts.map((court) => (
                 <SelectItem key={court.id} value={court.id}>{court.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
             Save Schedule
           </Button>
         </div>
@@ -244,7 +143,7 @@ export default function TimeSlotsPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {TIME_OPTIONS.map(t => (
+                          {TIME_OPTIONS.map((t) => (
                             <SelectItem key={t} value={t}>{t}</SelectItem>
                           ))}
                         </SelectContent>
@@ -260,7 +159,7 @@ export default function TimeSlotsPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {TIME_OPTIONS.map(t => (
+                          {TIME_OPTIONS.map((t) => (
                             <SelectItem key={t} value={t}>{t}</SelectItem>
                           ))}
                         </SelectContent>
@@ -271,7 +170,7 @@ export default function TimeSlotsPage() {
               </CardHeader>
               <CardContent className="pt-6">
                 <div className="flex flex-wrap gap-2">
-                  {slots.map(slotTime => {
+                  {slots.map((slotTime) => {
                     const isBlocked = schedule.blockedSlots.includes(slotTime);
                     return (
                       <Button

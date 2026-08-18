@@ -49,6 +49,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import useAdminStore from "@/store/useAdminStore"
 import { format } from "date-fns"
@@ -56,6 +63,7 @@ import { format } from "date-fns"
 export default function AdminsPage() {
   const { 
     admins, 
+    pagination,
     isLoading, 
     fetchAdmins, 
     createAdmin, 
@@ -64,6 +72,9 @@ export default function AdminsPage() {
   } = useAdminStore()
 
   const [searchTerm, setSearchTerm] = useState("")
+  const [pageSize, setPageSize] = useState(10)
+  const [currentCursor, setCurrentCursor] = useState<string | undefined>(undefined)
+  const [previousCursors, setPreviousCursors] = useState<(string | undefined)[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [formData, setFormData] = useState({
     fullName: "",
@@ -73,8 +84,30 @@ export default function AdminsPage() {
   })
 
   useEffect(() => {
-    fetchAdmins()
-  }, [fetchAdmins])
+    setCurrentCursor(undefined)
+    setPreviousCursors([])
+    fetchAdmins({ limit: pageSize, search: searchTerm || undefined })
+  }, [fetchAdmins, pageSize, searchTerm])
+
+  const handleNextPage = async () => {
+    if (!pagination.nextCursor) return
+    setPreviousCursors((prev) => [...prev, currentCursor])
+    setCurrentCursor(pagination.nextCursor)
+    await fetchAdmins({
+      cursor: pagination.nextCursor,
+      limit: pageSize,
+      search: searchTerm || undefined,
+    })
+  }
+
+  const handlePreviousPage = async () => {
+    if (previousCursors.length === 0) return
+    const stack = [...previousCursors]
+    const prevCursor = stack.pop()
+    setPreviousCursors(stack)
+    setCurrentCursor(prevCursor)
+    await fetchAdmins({ cursor: prevCursor, limit: pageSize, search: searchTerm || undefined })
+  }
 
   const handleAddAdmin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -82,6 +115,9 @@ export default function AdminsPage() {
       await createAdmin(formData)
       setIsAddDialogOpen(false)
       setFormData({ fullName: "", email: "", phoneNumber: "", password: "" })
+      setCurrentCursor(undefined)
+      setPreviousCursors([])
+      await fetchAdmins({ limit: pageSize, search: searchTerm || undefined })
     } catch (error) {
       alert("Failed to create admin")
     }
@@ -109,11 +145,6 @@ export default function AdminsPage() {
     }
   }
 
-  const filteredAdmins = admins.filter(admin => 
-    admin.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    admin.email.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -124,7 +155,12 @@ export default function AdminsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-           <Button variant="outline" size="sm" onClick={() => fetchAdmins()} disabled={isLoading}>
+           <Button
+             variant="outline"
+             size="sm"
+             onClick={() => fetchAdmins({ cursor: currentCursor, limit: pageSize, search: searchTerm || undefined })}
+             disabled={isLoading}
+           >
              <RefreshCcw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
              Refresh
            </Button>
@@ -161,7 +197,7 @@ export default function AdminsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAdmins.map((admin) => (
+              {admins.map((admin) => (
                 <TableRow key={admin.id} className="group hover:bg-muted/30 transition-colors">
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -221,7 +257,7 @@ export default function AdminsPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredAdmins.length === 0 && !isLoading && (
+              {admins.length === 0 && !isLoading && (
                 <TableRow>
                   <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
                     No administrators found.
@@ -230,6 +266,29 @@ export default function AdminsPage() {
               )}
             </TableBody>
           </Table>
+          <div className="flex items-center justify-between border-t p-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Rows per page</span>
+              <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
+                <SelectTrigger className="h-8 w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={isLoading || previousCursors.length === 0}>
+                Previous
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleNextPage} disabled={isLoading || !pagination.hasNextPage}>
+                Next
+              </Button>
+            </div>
+          </div>
           {isLoading && (
             <div className="flex items-center justify-center p-12 bg-background/50 backdrop-blur-sm absolute inset-0 z-10">
               <div className="flex flex-col items-center gap-2">

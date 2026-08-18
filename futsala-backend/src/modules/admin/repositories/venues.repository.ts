@@ -31,7 +31,6 @@ export class AdminVenueRepository {
     name: string;
     pricePerHour: number;
     venueId: string;
-    tenantId?: string;
   }) {
     if (courtData.id) {
       return prisma.court.update({
@@ -42,12 +41,12 @@ export class AdminVenueRepository {
         },
       });
     }
+
     return prisma.court.create({
       data: {
         name: courtData.name,
         pricePerHour: courtData.pricePerHour,
         venueId: courtData.venueId,
-        tenantId: courtData.tenantId || '',
       },
     });
   }

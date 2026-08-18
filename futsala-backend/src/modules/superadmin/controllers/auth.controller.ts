@@ -6,7 +6,7 @@ import { cookieOptions } from '../../../utils/jwt';
 export const login = asyncHandler(async (req: Request, res: Response) => {
   const result = await superAdminAuthService.login(req.body);
   res.cookie('auth-token', result.token, { ...result.cookieOptions, maxAge: 60 * 60 * 24 * 7 * 1000 });
-  res.json({ success: true, user: result.user });
+  res.json({ success: true, user: result.user, token: result.token });
 });
 
 export const logout = (_req: Request, res: Response) => {

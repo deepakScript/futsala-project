@@ -1,9 +1,9 @@
 import { BookingRepository } from '../repositories/booking.repository';
 import { CourtRepository } from '../repositories/court.repository';
 import { AppError } from '../../../utils/AppError';
-import { publishBookingEvent } from '../../../utils/kafka/producers/bookingProducer';
 import crypto from 'crypto';
 import { BookingStatus } from '@prisma/client';
+
 
 export interface CreateBookingDTO {
   userId: string;
@@ -137,9 +137,6 @@ export class BookingService {
       status: BookingStatus.PENDING,
     });
 
-    // Publish event to Kafka
-    await publishBookingEvent('BOOKING_CREATED', booking);
-
     return booking;
   }
 
@@ -182,9 +179,6 @@ export class BookingService {
     const updatedBooking = await this.bookingRepo.update(bookingId, {
       status: BookingStatus.CANCELLED,
     });
-
-    // Publish event to Kafka
-    await publishBookingEvent('BOOKING_CANCELLED', updatedBooking);
 
     return updatedBooking;
   }
@@ -247,9 +241,6 @@ export class BookingService {
     }
 
     const updatedBooking = await this.bookingRepo.update(bookingId, updateData);
-
-    // Publish event to Kafka
-    await publishBookingEvent('BOOKING_RESCHEDULED', updatedBooking);
 
     return updatedBooking;
   }

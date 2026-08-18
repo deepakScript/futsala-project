@@ -60,9 +60,12 @@ import useVenueStore from "@/store/useVenueStore"
 import { format } from "date-fns"
 
 export default function VenuesPage() {
-  const { venues, owners, isLoading, fetchVenues, fetchOwners, toggleVenueStatus, deleteVenue, createVenue } = useVenueStore()
+  const { venues, owners, pagination, isLoading, fetchVenues, fetchOwners, toggleVenueStatus, deleteVenue, createVenue } = useVenueStore()
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
+  const [pageSize, setPageSize] = useState(10)
+  const [currentCursor, setCurrentCursor] = useState<string | undefined>(undefined)
+  const [previousCursors, setPreviousCursors] = useState<(string | undefined)[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [newVenue, setNewVenue] = useState({
     name: "",
@@ -74,29 +77,78 @@ export default function VenuesPage() {
   })
 
   useEffect(() => {
-    fetchVenues()
     fetchOwners()
-  }, [fetchVenues, fetchOwners])
+  }, [fetchOwners])
+
+  useEffect(() => {
+    setCurrentCursor(undefined)
+    setPreviousCursors([])
+    fetchVenues({
+      limit: pageSize,
+      search: searchTerm || undefined,
+      status:
+        filterStatus === 'active' || filterStatus === 'inactive'
+          ? (filterStatus as 'active' | 'inactive')
+          : undefined,
+    })
+  }, [fetchVenues, pageSize, searchTerm, filterStatus])
+
+  const handleNextPage = async () => {
+    if (!pagination.nextCursor) return
+    setPreviousCursors((prev) => [...prev, currentCursor])
+    setCurrentCursor(pagination.nextCursor)
+    await fetchVenues({
+      cursor: pagination.nextCursor,
+      limit: pageSize,
+      search: searchTerm || undefined,
+      status:
+        filterStatus === 'active' || filterStatus === 'inactive'
+          ? (filterStatus as 'active' | 'inactive')
+          : undefined,
+    })
+  }
+
+  const handlePreviousPage = async () => {
+    if (previousCursors.length === 0) return
+    const stack = [...previousCursors]
+    const prevCursor = stack.pop()
+    setPreviousCursors(stack)
+    setCurrentCursor(prevCursor)
+    await fetchVenues({
+      cursor: prevCursor,
+      limit: pageSize,
+      search: searchTerm || undefined,
+      status:
+        filterStatus === 'active' || filterStatus === 'inactive'
+          ? (filterStatus as 'active' | 'inactive')
+          : undefined,
+    })
+  }
 
   const handleCreateVenue = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!newVenue.ownerId) {
+      alert("Please select a venue owner. Create a venue owner under Venue Owners tab first if none exist.")
+      return
+    }
     try {
       await createVenue(newVenue)
       setIsDialogOpen(false)
       setNewVenue({ name: "", address: "", city: "", phoneNumber: "", description: "", ownerId: "" })
-    } catch (error) {
-      console.error("Failed to create venue")
+      setCurrentCursor(undefined)
+      setPreviousCursors([])
+      await fetchVenues({
+        limit: pageSize,
+        search: searchTerm || undefined,
+        status:
+          filterStatus === 'active' || filterStatus === 'inactive'
+            ? (filterStatus as 'active' | 'inactive')
+            : undefined,
+      })
+    } catch (error: any) {
+      alert(error.message || "Failed to create venue")
     }
   }
-
-  const filteredVenues = venues.filter(venue => {
-    const matchesSearch = venue.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          venue.owner?.fullName.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    if (filterStatus === "all") return matchesSearch
-    const isActive = filterStatus === "active"
-    return matchesSearch && venue.isActive === isActive
-  })
 
   return (
     <div className="space-y-6">
@@ -234,7 +286,7 @@ export default function VenuesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredVenues.map((venue) => (
+              {venues.map((venue) => (
                 <TableRow key={venue.id} className="group transition-colors hover:bg-muted/30">
                   <TableCell>
                     <div className="flex flex-col">
@@ -305,7 +357,7 @@ export default function VenuesPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredVenues.length === 0 && !isLoading && (
+              {venues.length === 0 && !isLoading && (
                 <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                     No venues found.
@@ -314,6 +366,29 @@ export default function VenuesPage() {
               )}
             </TableBody>
           </Table>
+          <div className="flex items-center justify-between border-t p-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Rows per page</span>
+              <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
+                <SelectTrigger className="h-8 w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={isLoading || previousCursors.length === 0}>
+                Previous
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleNextPage} disabled={isLoading || !pagination.hasNextPage}>
+                Next
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -34,6 +34,11 @@ const envSchema = z.object({
 
   KHALTI_BASE_URL: z.string().default('https://a.khalti.com/api/v2'),
   KHALTI_SECRET_KEY: z.string().default('97fbe616f94b4b0cab1a443dfa116206'),
+
+  REDIS_HOST: z.string().default('localhost'),
+  REDIS_PORT: z.coerce.number().default(6379),
+  REDIS_USERNAME: z.string().optional().default(''),
+  REDIS_PASSWORD: z.string().optional().default(''),
 });
 
 const _env = envSchema.safeParse(process.env);

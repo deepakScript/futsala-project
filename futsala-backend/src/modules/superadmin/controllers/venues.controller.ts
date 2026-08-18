@@ -1,10 +1,20 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../../../middlewares/asyncHandler';
 import { superAdminVenuesService } from '../services/venues.service';
+import { parseCursorPagination } from '../utils/pagination';
 
-export const listVenues = asyncHandler(async (_req: Request, res: Response) => {
-  const venues = await superAdminVenuesService.listVenues();
-  res.json({ venues });
+export const listVenues = asyncHandler(async (req: Request, res: Response) => {
+  const paginationParams = parseCursorPagination(req.query as Record<string, unknown>);
+  const search = typeof req.query.search === 'string' ? req.query.search : undefined;
+  const status = typeof req.query.status === 'string' ? req.query.status : undefined;
+  const isActive = status === 'active' ? true : status === 'inactive' ? false : undefined;
+
+  const result = await superAdminVenuesService.listVenues({
+    ...paginationParams,
+    search,
+    isActive,
+  });
+  res.json({ venues: result.data, pagination: result.pagination });
 });
 
 export const createVenue = asyncHandler(async (req: Request, res: Response) => {

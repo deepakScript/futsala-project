@@ -9,6 +9,7 @@ import * as profile from '../controllers/profile.controller';
 import * as timeSlots from '../controllers/timeSlots.controller';
 import * as earnings from '../controllers/earnings.controller';
 import * as upload from '../controllers/upload.controller';
+import * as customers from '../controllers/customers.controller';
 
 const router = Router();
 const uploadMiddleware = multer({ storage: multer.memoryStorage() });
@@ -18,6 +19,8 @@ router.post('/auth/logout', auth.logout);
 
 router.get('/bookings', requireVenueOwner, bookings.getBookings);
 router.patch('/bookings', requireVenueOwner, bookings.patchBooking);
+
+router.get('/customers', requireVenueOwner, customers.getCustomers);
 
 router.get('/dashboard/stats', requireVenueOwner, dashboard.getStats);
 router.get('/earnings', requireVenueOwner, earnings.getEarnings);

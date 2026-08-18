@@ -36,12 +36,26 @@ interface Booking {
   }
 }
 
+interface CursorPagination {
+  nextCursor: string | null
+  hasNextPage: boolean
+  limit: number
+}
+
 interface BookingState {
   bookings: Booking[]
+  pagination: CursorPagination
   isLoading: boolean
   error: string | null
   
-  fetchBookings: (filters?: { venueId?: string, status?: string, date?: string }) => Promise<void>
+  fetchBookings: (filters?: {
+    venueId?: string
+    status?: string
+    date?: string
+    search?: string
+    cursor?: string
+    limit?: number
+  }) => Promise<void>
   updateBooking: (id: string, data: { status?: string, paymentStatus?: string, notes?: string }) => Promise<void>
   cancelBooking: (id: string) => Promise<void>
   refundBooking: (id: string) => Promise<void>
@@ -50,6 +64,11 @@ interface BookingState {
 
 const useBookingStore = create<BookingState>((set, get) => ({
   bookings: [],
+  pagination: {
+    nextCursor: null,
+    hasNextPage: false,
+    limit: 10,
+  },
   isLoading: false,
   error: null,
 
@@ -60,9 +79,16 @@ const useBookingStore = create<BookingState>((set, get) => ({
       if (filters?.venueId) params.append('venueId', filters.venueId)
       if (filters?.status) params.append('status', filters.status)
       if (filters?.date) params.append('date', filters.date)
+      if (filters?.search) params.append('search', filters.search)
+      if (filters?.cursor) params.append('cursor', filters.cursor)
+      if (filters?.limit) params.append('limit', String(filters.limit))
 
       const response = await axiosInstance.get(`/bookings?${params.toString()}`)
-      set({ bookings: response.data.bookings, isLoading: false })
+      set({
+        bookings: response.data.bookings,
+        pagination: response.data.pagination,
+        isLoading: false,
+      })
     } catch (err: any) {
       set({ error: err.response?.data?.error || "Failed to fetch bookings", isLoading: false })
     }

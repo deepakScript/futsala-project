@@ -1,9 +1,11 @@
 import { superAdminAdminsRepository } from '../repositories/admins.repository';
 import { AppError, ErrorCode } from '../../../utils/customError';
+import { buildCursorPage, CursorPaginationParams } from '../utils/pagination';
 
 export class SuperAdminAdminsService {
-  async listAdmins() {
-    return superAdminAdminsRepository.listAdmins();
+  async listAdmins(params: CursorPaginationParams & { search?: string }) {
+    const admins = await superAdminAdminsRepository.listAdmins(params);
+    return buildCursorPage(admins, params.limit);
   }
 
   async createAdmin(data: {

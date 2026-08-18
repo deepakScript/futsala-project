@@ -1,9 +1,11 @@
 import { superAdminVenuesRepository } from '../repositories/venues.repository';
 import { AppError, ErrorCode } from '../../../utils/customError';
+import { buildCursorPage, CursorPaginationParams } from '../utils/pagination';
 
 export class SuperAdminVenuesService {
-  async listVenues() {
-    return superAdminVenuesRepository.listAll();
+  async listVenues(params: CursorPaginationParams & { search?: string; isActive?: boolean }) {
+    const venues = await superAdminVenuesRepository.listAll(params);
+    return buildCursorPage(venues, params.limit);
   }
 
   async createVenue(data: {
@@ -66,7 +68,7 @@ export class SuperAdminVenuesService {
     const totalRevenue = bookings
       .filter((b) => b.paymentStatus === 'PAID')
       .reduce((sum, b) => sum + b.totalPrice, 0);
-    const commission = totalRevenue * 0.1;
+    const commission = totalRevenue * 0.02;
 
     return {
       bookings,

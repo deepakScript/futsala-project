@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import axios from '@/lib/axios';
+import { useForm } from 'react-hook-form';
+import useVenueStore, { Court, Venue } from '@/lib/store/useVenueStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,23 +21,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface Court {
-  id?: string;
-  name: string;
-  pricePerHour: number;
-}
-
-interface Venue {
-  id: string;
-  name: string;
-  address: string;
-  phoneNumber: string;
-  description: string;
-  amenities: string[];
-  images: string[];
-  courts: Court[];
-}
-
 const AVAILABLE_AMENITIES = [
   'Parking',
   'Changing room',
@@ -47,39 +31,50 @@ const AVAILABLE_AMENITIES = [
   'Wi-Fi'
 ];
 
+interface VenueFormValues {
+  name: string;
+  address: string;
+  phoneNumber: string;
+  description: string;
+}
+
 export default function VenuePage() {
-  const [venue, setVenue] = useState<Venue | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const { 
+    venue, 
+    isLoading, 
+    isSaving, 
+    fetchVenue, 
+    updateVenue, 
+    uploadImage, 
+    setVenue 
+  } = useVenueStore();
+
   const [newImage, setNewImage] = useState<File | null>(null);
 
-  const fetchVenue = async () => {
-    try {
-      const response = await axios.get('/venues');
-      setVenue(response.data);
-    } catch (error) {
-      toast.error('Failed to load venue information');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { register, handleSubmit, reset } = useForm<VenueFormValues>();
 
   useEffect(() => {
     fetchVenue();
-  }, []);
+  }, [fetchVenue]);
 
-  const handleUpdateVenue = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (venue) {
+      reset({
+        name: venue.name,
+        address: venue.address,
+        phoneNumber: venue.phoneNumber,
+        description: venue.description,
+      });
+    }
+  }, [venue, reset]);
+
+  const onSubmit = async (data: VenueFormValues) => {
     if (!venue) return;
-    
-    setSaving(true);
     try {
-      await axios.patch('/venues', venue);
+      await updateVenue(data);
       toast.success('Venue updated successfully');
-    } catch (error) {
-      toast.error('Failed to update venue');
-    } finally {
-      setSaving(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update venue');
     }
   };
 
@@ -97,23 +92,15 @@ export default function VenuePage() {
 
   const handleImageUpload = async () => {
     if (!newImage || !venue) return;
-    
-    const formData = new FormData();
-    formData.append('file', newImage);
-    formData.append('venueId', venue.id);
-
     try {
       toast.loading('Uploading image...');
-      const response = await axios.post('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      setVenue({ ...venue, images: [...venue.images, response.data.url] });
+      await uploadImage(newImage);
       setNewImage(null);
       toast.dismiss();
       toast.success('Image uploaded successfully');
-    } catch (error) {
+    } catch (error: any) {
       toast.dismiss();
-      toast.error('Failed to upload image');
+      toast.error(error.message || 'Failed to upload image');
     }
   };
 
@@ -121,7 +108,7 @@ export default function VenuePage() {
     if (!venue) return;
     setVenue({
       ...venue,
-      images: venue.images.filter(img => img !== imageUrl)
+      images: venue.images.filter((img) => img !== imageUrl),
     });
   };
 
@@ -133,7 +120,7 @@ export default function VenuePage() {
     };
     setVenue({
       ...venue,
-      courts: [...venue.courts, newCourt]
+      courts: [...venue.courts, newCourt],
     });
   };
 
@@ -144,7 +131,7 @@ export default function VenuePage() {
     setVenue({ ...venue, courts: newCourts });
   };
 
-  if (loading) {
+  if (isLoading && !venue) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -165,7 +152,7 @@ export default function VenuePage() {
   }
 
   return (
-    <div className="space-y-8 pb-10">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 pb-10">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Venue Management</h2>
@@ -173,8 +160,8 @@ export default function VenuePage() {
             Control your venue information, pricing, and facilities.
           </p>
         </div>
-        <Button onClick={handleUpdateVenue} disabled={saving}>
-          {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
+        <Button type="submit" disabled={isSaving}>
+          {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
           Save Changes
         </Button>
       </div>
@@ -191,8 +178,7 @@ export default function VenuePage() {
                 <Label htmlFor="name">Venue Name</Label>
                 <Input 
                   id="name" 
-                  value={venue.name} 
-                  onChange={(e) => setVenue({...venue, name: e.target.value})} 
+                  {...register('name', { required: true })}
                 />
               </div>
               <div className="grid gap-2">
@@ -202,8 +188,7 @@ export default function VenuePage() {
                   <Input 
                     id="address" 
                     className="pl-8"
-                    value={venue.address} 
-                    onChange={(e) => setVenue({...venue, address: e.target.value})} 
+                    {...register('address', { required: true })}
                   />
                 </div>
               </div>
@@ -214,8 +199,7 @@ export default function VenuePage() {
                   <Input 
                     id="phone" 
                     className="pl-8"
-                    value={venue.phoneNumber} 
-                    onChange={(e) => setVenue({...venue, phoneNumber: e.target.value})} 
+                    {...register('phoneNumber')}
                   />
                 </div>
               </div>
@@ -233,6 +217,7 @@ export default function VenuePage() {
                   return (
                     <Button
                       key={amenity}
+                      type="button"
                       variant={isSelected ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => toggleAmenity(amenity)}
@@ -247,7 +232,7 @@ export default function VenuePage() {
               <div className="mt-4 p-4 bg-secondary/10 rounded-lg">
                 <p className="text-xs text-muted-foreground mb-2">Active Facilities List:</p>
                 <div className="flex flex-wrap gap-2">
-                  {venue.amenities.map(a => (
+                  {venue.amenities.map((a) => (
                     <Badge key={a} variant="secondary" className="gap-1 px-3">
                       {a}
                       <X className="h-3 w-3 cursor-pointer" onClick={() => toggleAmenity(a)} />
@@ -262,7 +247,7 @@ export default function VenuePage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Court Pricing & Details</CardTitle>
-              <Button size="sm" variant="outline" onClick={addCourt}>
+              <Button type="button" size="sm" variant="outline" onClick={addCourt}>
                 <Plus className="h-4 w-4 mr-1" />
                 Add Court
               </Button>
@@ -278,7 +263,7 @@ export default function VenuePage() {
                         onChange={(e) => {
                           const newCourts = [...venue.courts];
                           newCourts[index].name = e.target.value;
-                          setVenue({...venue, courts: newCourts});
+                          setVenue({ ...venue, courts: newCourts });
                         }}
                         placeholder="e.g. Court A"
                       />
@@ -290,17 +275,18 @@ export default function VenuePage() {
                         value={court.pricePerHour} 
                         onChange={(e) => {
                           const newCourts = [...venue.courts];
-                          newCourts[index].pricePerHour = parseFloat(e.target.value);
-                          setVenue({...venue, courts: newCourts});
+                          newCourts[index].pricePerHour = parseFloat(e.target.value) || 0;
+                          setVenue({ ...venue, courts: newCourts });
                         }}
                       />
                     </div>
                     {!court.id && (
                       <Button 
+                        type="button"
                         variant="ghost" 
                         size="icon" 
-                        className="mt-5 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => removeCourt(index)}
+                        onClick={() => removeCourt(index)} 
+                        className="text-destructive mt-5"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -309,83 +295,57 @@ export default function VenuePage() {
                 </div>
               ))}
               {venue.courts.length === 0 && (
-                <div className="text-center py-6 text-muted-foreground border border-dashed rounded-lg">
-                  No courts added yet. Click "Add Court" to begin.
+                <div className="text-center py-6 text-xs text-muted-foreground">
+                  No courts configured for this venue.
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Right Column: Photos Manager */}
+        {/* Right Column: Photos Upload */}
         <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Venue Photos</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-4">
-                <div className="grid grid-cols-2 gap-2">
-                  {venue.images.map((url, i) => (
-                    <div key={i} className="group relative aspect-square rounded-md overflow-hidden bg-secondary">
-                      <img src={url} alt={`Venue ${i}`} className="object-cover w-full h-full" />
-                      <button 
-                         onClick={() => deleteImage(url)}
-                         className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                  {venue.images.length === 0 && (
-                    <div className="col-span-2 py-8 text-center text-xs text-muted-foreground border border-dashed rounded-lg">
-                      No photos uploaded yet.
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
+              <div className="grid gap-2">
+                <Label htmlFor="image">Upload New Image</Label>
+                <div className="flex gap-2">
                   <Input 
+                    id="image" 
                     type="file" 
-                    id="photo" 
-                    className="hidden" 
+                    accept="image/*"
                     onChange={(e) => setNewImage(e.target.files?.[0] || null)}
                   />
-                  <Label 
-                    htmlFor="photo" 
-                    className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer hover:bg-secondary/20 transition-colors"
-                  >
-                    <Upload className="h-6 w-6 text-muted-foreground mb-2" />
-                    <span className="text-sm font-medium">Click to select photo</span>
-                    <span className="text-xs text-muted-foreground mt-1">
-                      {newImage ? newImage.name : 'Max 5MB per image'}
-                    </span>
-                  </Label>
-                  {newImage && (
-                    <Button className="w-full" onClick={handleImageUpload}>
-                      Confirm Upload
-                    </Button>
-                  )}
+                  <Button type="button" size="icon" onClick={handleImageUpload} disabled={!newImage}>
+                    <Upload className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          <Card className="bg-primary/5">
-            <CardHeader>
-              <CardTitle className="text-sm">Policy & Rules</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <textarea 
-                className="w-full min-h-[150px] bg-transparent border-none focus:ring-0 text-sm" 
-                placeholder="List your venue rules, cancellation policies, etc."
-                value={venue.description}
-                onChange={(e) => setVenue({...venue, description: e.target.value})}
-              />
+              <div className="grid grid-cols-2 gap-2 mt-4">
+                {venue.images.map((img, idx) => (
+                  <div key={idx} className="relative group rounded-lg overflow-hidden border aspect-video bg-muted">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={img} alt={`Venue ${idx}`} className="w-full h-full object-cover" />
+                    <Button 
+                      type="button"
+                      variant="destructive" 
+                      size="icon" 
+                      className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => deleteImage(img)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </div>
       </div>
-    </div>
+    </form>
   );
 }

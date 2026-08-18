@@ -40,15 +40,27 @@ interface VenueStats {
   }
 }
 
+interface CursorPagination {
+  nextCursor: string | null
+  hasNextPage: boolean
+  limit: number
+}
+
 interface VenueState {
   venues: Venue[]
+  pagination: CursorPagination
   owners: any[]
   selectedVenue: Venue | null
   venueStats: VenueStats | null
   isLoading: boolean
   error: string | null
   
-  fetchVenues: () => Promise<void>
+  fetchVenues: (params?: {
+    cursor?: string
+    limit?: number
+    search?: string
+    status?: 'active' | 'inactive'
+  }) => Promise<void>
   fetchVenueDetails: (id: string) => Promise<void>
   fetchVenueStats: (id: string) => Promise<void>
   fetchOwners: () => Promise<void>
@@ -60,19 +72,34 @@ interface VenueState {
 
 const useVenueStore = create<VenueState>((set, get) => ({
   venues: [],
+  pagination: {
+    nextCursor: null,
+    hasNextPage: false,
+    limit: 10,
+  },
   owners: [],
   selectedVenue: null,
   venueStats: null,
   isLoading: false,
   error: null,
 
-  fetchVenues: async () => {
+  fetchVenues: async (params) => {
     set({ isLoading: true, error: null })
     try {
-      const response = await axiosInstance.get('/venues')
-      set({ venues: response.data.venues, isLoading: false })
+      const query = new URLSearchParams()
+      if (params?.cursor) query.append('cursor', params.cursor)
+      if (params?.limit) query.append('limit', String(params.limit))
+      if (params?.search) query.append('search', params.search)
+      if (params?.status) query.append('status', params.status)
+
+      const response = await axiosInstance.get(`/venues?${query.toString()}`)
+      set({
+        venues: response.data.venues,
+        pagination: response.data.pagination,
+        isLoading: false,
+      })
     } catch (err: any) {
-      set({ error: err.response?.data?.error || "Failed to fetch venues", isLoading: false })
+      set({ error: err.response?.data?.message || err.response?.data?.error || "Failed to fetch venues", isLoading: false })
     }
   },
 
@@ -91,7 +118,7 @@ const useVenueStore = create<VenueState>((set, get) => ({
       const response = await axiosInstance.get(`/venues/${id}`)
       set({ selectedVenue: response.data.venue, isLoading: false })
     } catch (err: any) {
-      set({ error: err.response?.data?.error || "Failed to fetch venue details", isLoading: false })
+      set({ error: err.response?.data?.message || err.response?.data?.error || "Failed to fetch venue details", isLoading: false })
     }
   },
 
@@ -101,7 +128,7 @@ const useVenueStore = create<VenueState>((set, get) => ({
       const response = await axiosInstance.get(`/venues/${id}/stats`)
       set({ venueStats: response.data, isLoading: false })
     } catch (err: any) {
-      set({ error: err.response?.data?.error || "Failed to fetch venue stats", isLoading: false })
+      set({ error: err.response?.data?.message || err.response?.data?.error || "Failed to fetch venue stats", isLoading: false })
     }
   },
 
@@ -109,10 +136,11 @@ const useVenueStore = create<VenueState>((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       await axiosInstance.post('/venues', data)
-      get().fetchVenues()
+      await get().fetchVenues({ limit: get().pagination.limit })
     } catch (err: any) {
-      set({ error: err.response?.data?.error || "Failed to create venue", isLoading: false })
-      throw err
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || "Failed to create venue"
+      set({ error: errorMsg, isLoading: false })
+      throw new Error(errorMsg)
     }
   },
 
@@ -120,12 +148,12 @@ const useVenueStore = create<VenueState>((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       await axiosInstance.patch(`/venues/${id}`, data)
-      get().fetchVenues()
+      await get().fetchVenues({ limit: get().pagination.limit })
       if (get().selectedVenue?.id === id) {
-        get().fetchVenueDetails(id)
+        await get().fetchVenueDetails(id)
       }
     } catch (err: any) {
-      set({ error: err.response?.data?.error || "Failed to update venue", isLoading: false })
+      set({ error: err.response?.data?.message || err.response?.data?.error || "Failed to update venue", isLoading: false })
     }
   },
 
@@ -138,7 +166,7 @@ const useVenueStore = create<VenueState>((set, get) => ({
         )
       }))
     } catch (err: any) {
-      set({ error: err.response?.data?.error || "Failed to toggle status" })
+      set({ error: err.response?.data?.message || err.response?.data?.error || "Failed to toggle status" })
     }
   },
 
@@ -151,7 +179,7 @@ const useVenueStore = create<VenueState>((set, get) => ({
         isLoading: false
       }))
     } catch (err: any) {
-      set({ error: err.response?.data?.error || "Failed to delete venue", isLoading: false })
+      set({ error: err.response?.data?.message || err.response?.data?.error || "Failed to delete venue", isLoading: false })
     }
   }
 }))

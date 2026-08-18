@@ -3,12 +3,14 @@ import { PaymentStatus } from '@prisma/client';
 
 export class SuperAdminBookingsRepository {
   async findAll(params: {
+    cursor?: string;
+    limit: number;
     venueId?: string;
     status?: string;
     date?: string;
     search?: string;
   }) {
-    const { venueId, status, date, search } = params;
+    const { cursor, limit, venueId, status, date, search } = params;
     const where: Record<string, unknown> = {};
 
     if (venueId) where.court = { venueId };
@@ -36,7 +38,9 @@ export class SuperAdminBookingsRepository {
         court: { include: { venue: { select: { id: true, name: true, address: true } } } },
         payment: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
   }
 

@@ -44,9 +44,9 @@ export class PaymentRepository {
   async verifyAndUpdatePayment(
     paymentId: string,
     bookingId: string,
-    userId: string,
-    amount: number,
-    transactionId: string
+    _userId: string,
+    _amount: number,
+    _transactionId: string
   ) {
     return prisma.$transaction(async (tx) => {
       const updatedPayment = await tx.payment.update({
@@ -62,16 +62,6 @@ export class PaymentRepository {
         data: {
           paymentStatus: PaymentStatus.PAID,
           status: 'CONFIRMED',
-        },
-      });
-
-      await tx.notification.create({
-        data: {
-          userId,
-          title: 'Payment Successful',
-          message: `Your payment of NPR ${amount} for pidx ${transactionId} has been confirmed.`,
-          type: 'PAYMENT',
-          isRead: false,
         },
       });
 

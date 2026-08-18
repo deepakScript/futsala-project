@@ -6,9 +6,10 @@ import env from './config/env.config';
 import userRoutes from './modules/users/routes';
 import adminRoutes from './modules/admin/routes';
 import superadminRoutes from './modules/superadmin/routes';
-import { startBookingConsumer } from './utils/kafka/consumers/bookingConsumer';
 import { logger, httpLogger } from './utils/logger';
 import { globalErrorHandler } from './middlewares/errorHandler';
+import './utils/email/email.worker';
+
 
 const app: Application = express();
 
@@ -66,7 +67,6 @@ const PORT = env.PORT;
 app.listen(PORT, async () => {
   logger.info(`Server running on port ${PORT}`);
   try {
-    await startBookingConsumer();
     logger.info('Booking consumer started successfully');
   } catch (kafkaErr) {
     logger.error({ kafkaErr }, 'Failed to start booking consumer');

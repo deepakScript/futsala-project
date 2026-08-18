@@ -2,9 +2,22 @@ import prisma from '../../../config/prismaClient';
 import bcrypt from 'bcryptjs';
 
 export class SuperAdminAdminsRepository {
-  async listAdmins() {
+  async listAdmins(params: { cursor?: string; limit: number; search?: string }) {
+    const { cursor, limit, search } = params;
+
     return prisma.user.findMany({
-      where: { role: 'ADMIN' },
+      where: {
+        role: 'TENANT_ADMIN',
+        ...(search
+          ? {
+              OR: [
+                { fullName: { contains: search, mode: 'insensitive' } },
+                { email: { contains: search, mode: 'insensitive' } },
+                { phoneNumber: { contains: search, mode: 'insensitive' } },
+              ],
+            }
+          : {}),
+      },
       select: {
         id: true,
         fullName: true,
@@ -12,7 +25,9 @@ export class SuperAdminAdminsRepository {
         phoneNumber: true,
         createdAt: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
   }
 
@@ -33,7 +48,7 @@ export class SuperAdminAdminsRepository {
         email: data.email,
         phoneNumber: data.phoneNumber || '',
         password: hashedPassword,
-        role: 'ADMIN',
+        role: 'TENANT_ADMIN',
       },
       select: {
         id: true,
@@ -55,14 +70,14 @@ export class SuperAdminAdminsRepository {
     if (data.password) updateData.password = await bcrypt.hash(data.password, 10);
 
     return prisma.user.update({
-      where: { id, role: 'ADMIN' },
+      where: { id },
       data: updateData,
       select: { id: true, fullName: true, email: true, phoneNumber: true },
     });
   }
 
   async delete(id: string) {
-    return prisma.user.delete({ where: { id, role: 'ADMIN' } });
+    return prisma.user.delete({ where: { id } });
   }
 }
 

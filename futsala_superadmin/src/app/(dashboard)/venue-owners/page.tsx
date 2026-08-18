@@ -57,6 +57,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import useOwnerStore from "@/store/useOwnerStore"
 import { format } from "date-fns"
@@ -64,6 +71,7 @@ import { format } from "date-fns"
 export default function VenueOwnersPage() {
   const { 
     owners, 
+    pagination,
     isLoading, 
     fetchOwners, 
     createOwner,
@@ -74,6 +82,9 @@ export default function VenueOwnersPage() {
   } = useOwnerStore()
   
   const [searchTerm, setSearchTerm] = useState("")
+  const [pageSize, setPageSize] = useState(10)
+  const [currentCursor, setCurrentCursor] = useState<string | undefined>(undefined)
+  const [previousCursors, setPreviousCursors] = useState<(string | undefined)[]>([])
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null)
@@ -88,8 +99,30 @@ export default function VenueOwnersPage() {
   })
 
   useEffect(() => {
-    fetchOwners()
-  }, [fetchOwners])
+    setCurrentCursor(undefined)
+    setPreviousCursors([])
+    fetchOwners({ limit: pageSize, search: searchTerm || undefined })
+  }, [fetchOwners, pageSize, searchTerm])
+
+  const handleNextPage = async () => {
+    if (!pagination.nextCursor) return
+    setPreviousCursors((prev) => [...prev, currentCursor])
+    setCurrentCursor(pagination.nextCursor)
+    await fetchOwners({
+      cursor: pagination.nextCursor,
+      limit: pageSize,
+      search: searchTerm || undefined,
+    })
+  }
+
+  const handlePreviousPage = async () => {
+    if (previousCursors.length === 0) return
+    const stack = [...previousCursors]
+    const prevCursor = stack.pop()
+    setPreviousCursors(stack)
+    setCurrentCursor(prevCursor)
+    await fetchOwners({ cursor: prevCursor, limit: pageSize, search: searchTerm || undefined })
+  }
 
   const handleAddOwner = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -97,15 +130,13 @@ export default function VenueOwnersPage() {
       await createOwner(formData)
       setIsAddDialogOpen(false)
       setFormData({ fullName: "", email: "", phoneNumber: "", password: "" })
-    } catch (error) {
-      alert("Failed to create venue owner")
+      setCurrentCursor(undefined)
+      setPreviousCursors([])
+      await fetchOwners({ limit: pageSize, search: searchTerm || undefined })
+    } catch (error: any) {
+      alert(error.message || "Failed to create venue owner")
     }
   }
-
-  const filteredOwners = owners.filter(owner => {
-    return owner.fullName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-           owner.email.toLowerCase().includes(searchTerm.toLowerCase())
-  })
 
   const handleResetPassword = async () => {
     if (!selectedOwnerId || !newPassword) return
@@ -135,7 +166,12 @@ export default function VenueOwnersPage() {
           </p>
         </div>
         <div className="flex gap-2">
-           <Button variant="outline" size="sm" onClick={() => fetchOwners()} disabled={isLoading}>
+           <Button
+             variant="outline"
+             size="sm"
+             onClick={() => fetchOwners({ cursor: currentCursor, limit: pageSize, search: searchTerm || undefined })}
+             disabled={isLoading}
+           >
              <RefreshCcw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
              Refresh
            </Button>
@@ -152,7 +188,7 @@ export default function VenueOwnersPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{owners.length}</div>
+                      <div className="text-2xl font-bold">{owners.length}</div>
             <p className="text-xs text-muted-foreground">
               Across the whole platform
             </p>
@@ -198,7 +234,7 @@ export default function VenueOwnersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredOwners.map((owner) => (
+              {owners.map((owner) => (
                 <TableRow key={owner.id} className="group transition-colors hover:bg-muted/30">
                   <TableCell>
                     <div className="flex flex-col">
@@ -247,6 +283,29 @@ export default function VenueOwnersPage() {
               ))}
             </TableBody>
           </Table>
+          <div className="flex items-center justify-between border-t p-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Rows per page</span>
+              <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
+                <SelectTrigger className="h-8 w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={isLoading || previousCursors.length === 0}>
+                Previous
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleNextPage} disabled={isLoading || !pagination.hasNextPage}>
+                Next
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

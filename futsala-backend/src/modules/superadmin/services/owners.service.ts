@@ -1,9 +1,11 @@
 import { superAdminOwnersRepository } from '../repositories/owners.repository';
 import { AppError, ErrorCode } from '../../../utils/customError';
+import { buildCursorPage, CursorPaginationParams } from '../utils/pagination';
 
 export class SuperAdminOwnersService {
-  async listOwners() {
-    return superAdminOwnersRepository.listAll();
+  async listOwners(params: CursorPaginationParams & { search?: string }) {
+    const owners = await superAdminOwnersRepository.listAll(params);
+    return buildCursorPage(owners, params.limit);
   }
 
   async listOwnersSimple() {
@@ -88,15 +90,15 @@ export class SuperAdminOwnersService {
         name: venue.name,
         revenue,
         bookingsCount,
-        platformCommission: revenue * 0.1,
+        platformCommission: revenue * 0.02,
       });
     });
 
     return {
       totalRevenue,
       totalBookings,
-      platformCommission: totalRevenue * 0.1,
-      netOwnerEarnings: totalRevenue * 0.9,
+      platformCommission: totalRevenue * 0.02,
+      netOwnerEarnings: totalRevenue * 0.98,
       venueBreakdown,
     };
   }

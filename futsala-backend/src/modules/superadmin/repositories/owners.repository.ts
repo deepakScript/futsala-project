@@ -2,9 +2,22 @@ import prisma from '../../../config/prismaClient';
 import bcrypt from 'bcryptjs';
 
 export class SuperAdminOwnersRepository {
-  async listAll() {
+  async listAll(params: { cursor?: string; limit: number; search?: string }) {
+    const { cursor, limit, search } = params;
+
     return prisma.user.findMany({
-      where: { role: 'VENUE_OWNER' },
+      where: {
+        role: 'TENANT_ADMIN',
+        ...(search
+          ? {
+              OR: [
+                { fullName: { contains: search, mode: 'insensitive' } },
+                { email: { contains: search, mode: 'insensitive' } },
+                { phoneNumber: { contains: search, mode: 'insensitive' } },
+              ],
+            }
+          : {}),
+      },
       select: {
         id: true,
         fullName: true,
@@ -13,13 +26,15 @@ export class SuperAdminOwnersRepository {
         createdAt: true,
         _count: { select: { venues: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
   }
 
   async listSimple() {
     return prisma.user.findMany({
-      where: { role: 'VENUE_OWNER' },
+      where: { role: 'TENANT_ADMIN' },
       select: { id: true, fullName: true, email: true },
     });
   }
@@ -30,7 +45,7 @@ export class SuperAdminOwnersRepository {
 
   async findById(id: string) {
     return prisma.user.findFirst({
-      where: { id, role: 'VENUE_OWNER' },
+      where: { id, role: 'TENANT_ADMIN' },
       include: {
         venues: {
           include: {
@@ -49,13 +64,29 @@ export class SuperAdminOwnersRepository {
     password: string;
   }) {
     const hashedPassword = await bcrypt.hash(data.password, 10);
+    const slugBase = (data.fullName || 'owner')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'owner';
+    const uniqueSlug = `${slugBase}-${Date.now()}`;
+
+    const tenant = await prisma.tenant.create({
+      data: {
+        name: `${data.fullName}'s Organization`,
+        slug: uniqueSlug,
+        email: data.email,
+        phoneNumber: data.phoneNumber || null,
+      },
+    });
+
     return prisma.user.create({
       data: {
         fullName: data.fullName,
         email: data.email,
         phoneNumber: data.phoneNumber || '',
         password: hashedPassword,
-        role: 'VENUE_OWNER',
+        role: 'TENANT_ADMIN',
+        tenantId: tenant.id,
       },
       select: {
         id: true,

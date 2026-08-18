@@ -1,10 +1,13 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../../../middlewares/asyncHandler';
 import { superAdminAdminsService } from '../services/admins.service';
+import { parseCursorPagination } from '../utils/pagination';
 
-export const listAdmins = asyncHandler(async (_req: Request, res: Response) => {
-  const admins = await superAdminAdminsService.listAdmins();
-  res.json({ admins });
+export const listAdmins = asyncHandler(async (req: Request, res: Response) => {
+  const paginationParams = parseCursorPagination(req.query as Record<string, unknown>);
+  const search = typeof req.query.search === 'string' ? req.query.search : undefined;
+  const result = await superAdminAdminsService.listAdmins({ ...paginationParams, search });
+  res.json({ admins: result.data, pagination: result.pagination });
 });
 
 export const createAdmin = asyncHandler(async (req: Request, res: Response) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axiosInstance from '@/lib/axios';
 import { format } from 'date-fns';
 import {
@@ -26,6 +26,13 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { MoreHorizontal, Loader2, Eye, Ban, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -51,29 +58,73 @@ interface Booking {
   paymentStatus: string;
 }
 
+interface CursorPagination {
+  nextCursor: string | null;
+  hasNextPage: boolean;
+  limit: number;
+}
+
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [pagination, setPagination] = useState<CursorPagination>({
+    nextCursor: null,
+    hasNextPage: false,
+    limit: 10,
+  });
   const [loading, setLoading] = useState(true);
+  const [pageSize, setPageSize] = useState(10);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentCursor, setCurrentCursor] = useState<string | undefined>(undefined);
+  const [previousCursors, setPreviousCursors] = useState<(string | undefined)[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userBookings, setUserBookings] = useState<Booking[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async (params?: { cursor?: string; limit?: number; search?: string }) => {
+    setLoading(true);
     try {
-      const response = await axiosInstance.get('/users');
-      setUsers(response.data);
+      const query = new URLSearchParams();
+      if (params?.cursor) query.append('cursor', params.cursor);
+      if (params?.limit) query.append('limit', String(params.limit));
+      if (params?.search) query.append('search', params.search);
+
+      const response = await axiosInstance.get(`/users?${query.toString()}`);
+      setUsers(response.data.users);
+      setPagination(response.data.pagination);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to fetch users.');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    setCurrentCursor(undefined);
+    setPreviousCursors([]);
+    fetchUsers({ limit: pageSize, search: searchTerm || undefined });
+  }, [fetchUsers, pageSize, searchTerm]);
+
+  const handleNextPage = async () => {
+    if (!pagination.nextCursor) return;
+    setPreviousCursors((prev) => [...prev, currentCursor]);
+    setCurrentCursor(pagination.nextCursor);
+    await fetchUsers({
+      cursor: pagination.nextCursor,
+      limit: pageSize,
+      search: searchTerm || undefined,
+    });
+  };
+
+  const handlePreviousPage = async () => {
+    if (previousCursors.length === 0) return;
+    const stack = [...previousCursors];
+    const prevCursor = stack.pop();
+    setPreviousCursors(stack);
+    setCurrentCursor(prevCursor);
+    await fetchUsers({ cursor: prevCursor, limit: pageSize, search: searchTerm || undefined });
+  };
 
   const toggleUserStatus = async (user: User) => {
     try {
@@ -119,8 +170,16 @@ export default function UsersPage() {
     <div className="p-8 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Users</h1>
-        <div className="text-muted-foreground">
-          Total Users: {users.length}
+        <div className="flex items-center gap-3">
+          <input
+            className="h-9 rounded-md border px-3 text-sm"
+            placeholder="Search users..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <div className="text-muted-foreground">
+            Showing: {users.length}
+          </div>
         </div>
       </div>
 
@@ -191,6 +250,29 @@ export default function UsersPage() {
             )}
           </TableBody>
         </Table>
+        <div className="flex items-center justify-between border-t p-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Rows per page</span>
+            <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
+              <SelectTrigger className="h-8 w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={loading || previousCursors.length === 0}>
+              Previous
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleNextPage} disabled={loading || !pagination.hasNextPage}>
+              Next
+            </Button>
+          </div>
+        </div>
       </div>
 
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>

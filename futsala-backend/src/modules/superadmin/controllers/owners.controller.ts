@@ -1,10 +1,14 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../../../middlewares/asyncHandler';
 import { superAdminOwnersService } from '../services/owners.service';
+import { parseCursorPagination } from '../utils/pagination';
 
-export const listOwners = asyncHandler(async (_req: Request, res: Response) => {
-  const owners = await superAdminOwnersService.listOwners();
-  res.json({ owners });
+export const listOwners = asyncHandler(async (req: Request, res: Response) => {
+  const paginationParams = parseCursorPagination(req.query as Record<string, unknown>);
+  const search = typeof req.query.search === 'string' ? req.query.search : undefined;
+
+  const result = await superAdminOwnersService.listOwners({ ...paginationParams, search });
+  res.json({ owners: result.data, pagination: result.pagination });
 });
 
 export const createOwner = asyncHandler(async (req: Request, res: Response) => {

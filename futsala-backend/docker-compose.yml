@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: futsala-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: futsala
+      POSTGRES_USER: futsala
+      POSTGRES_PASSWORD: futsala123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U futsala -d futsala"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: futsala-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: futsala-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgresql://futsala:futsala123@postgres:5432/futsala?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      ADMIN_URL: http://localhost:3000
+      SUPERADMIN_URL: http://localhost:3001
+      FRONTEND_URL: http://localhost:5000
+      CLIENT_URL: http://localhost:3000
+      JWT_SECRET: your-secret-key
+      JWT_ACCESS_SECRET: your-access-secret
+      JWT_REFRESH_SECRET: your-refresh-secret
+    ports:
+      - "5000:5000"
+
+volumes:
+  postgres_data:
+  redis_data:

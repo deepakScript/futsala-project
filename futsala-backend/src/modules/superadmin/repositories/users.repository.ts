@@ -1,11 +1,26 @@
 import prisma from '../../../config/prismaClient';
 
 export class SuperAdminUsersRepository {
-  async listCustomers() {
+  async listCustomers(params: { cursor?: string; limit: number; search?: string }) {
+    const { cursor, limit, search } = params;
+
     return prisma.user.findMany({
-      where: { role: 'CUSTOMER' },
+      where: {
+        role: 'CUSTOMER',
+        ...(search
+          ? {
+              OR: [
+                { fullName: { contains: search, mode: 'insensitive' } },
+                { email: { contains: search, mode: 'insensitive' } },
+                { phoneNumber: { contains: search, mode: 'insensitive' } },
+              ],
+            }
+          : {}),
+      },
       include: { _count: { select: { bookings: true } } },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
   }
 

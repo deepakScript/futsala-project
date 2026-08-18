@@ -1,13 +1,36 @@
 import prisma from '../../../config/prismaClient';
 
 export class SuperAdminVenuesRepository {
-  async listAll() {
+  async listAll(params: {
+    cursor?: string;
+    limit: number;
+    search?: string;
+    isActive?: boolean;
+  }) {
+    const { cursor, limit, search, isActive } = params;
+
     return prisma.venue.findMany({
+      where: {
+        ...(typeof isActive === 'boolean' ? { isActive } : {}),
+        ...(search
+          ? {
+              OR: [
+                { name: { contains: search, mode: 'insensitive' } },
+                { city: { contains: search, mode: 'insensitive' } },
+                { address: { contains: search, mode: 'insensitive' } },
+                { owner: { fullName: { contains: search, mode: 'insensitive' } } },
+                { owner: { email: { contains: search, mode: 'insensitive' } } },
+              ],
+            }
+          : {}),
+      },
       include: {
         owner: { select: { id: true, fullName: true, email: true, phoneNumber: true } },
-        _count: { select: { courts: true } },
+        _count: { select: { courts: true, bookings: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
   }
 
@@ -17,13 +40,12 @@ export class SuperAdminVenuesRepository {
       include: {
         owner: true,
         courts: true,
-        reviews: { include: { user: { select: { fullName: true, email: true } } } },
       },
     });
   }
 
   async findOwnerById(ownerId: string) {
-    return prisma.user.findFirst({ where: { id: ownerId, role: 'VENUE_OWNER' } });
+    return prisma.user.findFirst({ where: { id: ownerId, role: 'TENANT_ADMIN' } });
   }
 
   async create(data: {
@@ -35,7 +57,21 @@ export class SuperAdminVenuesRepository {
     ownerId: string;
     amenities?: string[];
     images?: string[];
+    tenantId?: string;
   }) {
+    let tenantId = data.tenantId;
+
+    if (!tenantId) {
+      const owner = await prisma.user.findUnique({
+        where: { id: data.ownerId },
+        select: { id: true, tenantId: true, fullName: true, email: true },
+      });
+
+      if (owner?.tenantId) {
+        tenantId = owner.tenantId;
+      }
+    }
+
     return prisma.venue.create({
       data: {
         name: data.name,
@@ -46,7 +82,7 @@ export class SuperAdminVenuesRepository {
         ownerId: data.ownerId,
         amenities: data.amenities || [],
         images: data.images || [],
-        tenantId: '',
+        tenantId: tenantId || null,
         isActive: true,
       },
     });
@@ -68,6 +104,7 @@ export class SuperAdminVenuesRepository {
         data: { name: courtData.name, pricePerHour: courtData.pricePerHour },
       });
     }
+
     return prisma.court.create({
       data: {
         name: courtData.name,
@@ -75,7 +112,6 @@ export class SuperAdminVenuesRepository {
         courtType: 'Standard',
         surfaceType: 'Turf',
         venueId: courtData.venueId,
-        tenantId: '',
       },
     });
   }

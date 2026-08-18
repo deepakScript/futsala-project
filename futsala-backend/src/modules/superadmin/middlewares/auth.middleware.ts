@@ -2,13 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 import { SuperAdminTokenPayload, verifyToken } from '../../../utils/jwt';
 
 export const requireSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
-  const token = req.cookies?.['auth-token'];
+  const token = req.cookies?.['auth-token'] || req.cookies?.token || (req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.split(' ')[1] : undefined);
   if (!token) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
   const decoded = verifyToken<SuperAdminTokenPayload>(token);
-  if (!decoded || decoded.role !== 'ADMIN') {
+  if (!decoded || (decoded.role !== 'TENANT_ADMIN' && decoded.role !== 'SUPERADMIN')) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

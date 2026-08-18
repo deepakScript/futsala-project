@@ -6,7 +6,7 @@ interface User {
   id: string
   email: string
   fullName: string
-  role: 'ADMIN' | 'VENUE_OWNER' | 'CUSTOMER'
+  role: 'SUPERADMIN' | 'ADMIN' | 'VENUE_OWNER' | 'CUSTOMER'
 }
 
 interface AuthState {
@@ -37,7 +37,11 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false 
           })
         } catch (err: any) {
-          const errorMessage = err.response?.data?.error || 'Login failed'
+          const errorMessage = 
+            err.response?.data?.message || 
+            err.response?.data?.error || 
+            err.message || 
+            'Login failed'
           set({ 
             error: errorMessage, 
             isLoading: false 
@@ -67,6 +71,7 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
     }
   )
 )

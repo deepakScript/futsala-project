@@ -4,11 +4,11 @@ import { Request, Response, NextFunction } from 'express';
  * Middleware factory that enforces role-based access control.
  *
  * @param allowedRoles - Array of roles permitted to access the route.
- *   - 'VENUE_OWNER'  → Admin panel
- *   - 'ADMIN'        → Superadmin panel
+ *   - 'TENANT_ADMIN' → Tenant admin panel
+ *   - 'SUPERADMIN'   → Platform superadmin panel
  *
  * @example
- *   router.use(verifyToken, requireRole(['VENUE_OWNER']));
+ *   router.use(verifyToken, requireRole(['TENANT_ADMIN']));
  */
 export const requireRole = (allowedRoles: string[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {

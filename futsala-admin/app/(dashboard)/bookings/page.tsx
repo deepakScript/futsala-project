@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import axios, { isAxiosError } from '@/lib/axios';
+import { useForm } from 'react-hook-form';
+import useBookingStore, { Booking } from '@/lib/store/useBookingStore';
 import BookingStats from '@/components/bookings/BookingStats';
 import BookingTable from '@/components/bookings/BookingTable';
 import BookingCalendar from '@/components/bookings/BookingCalendar';
 import BookingDetails from '@/components/bookings/BookingDetails';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, RefreshCw, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,75 +15,66 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
-interface Booking {
-  id: string;
-  bookingDate: string;
-  startTime: string;
-  endTime: string;
-  status: string;
-  totalPrice: number;
-  paymentStatus: string;
-  otp?: string;
-  user: {
-    fullName: string;
-    email: string;
-    phoneNumber: string;
-  };
-  court: {
-    name: string;
-    venue: {
-      name: string;
-    };
-  };
-}
-
-interface BookingsResponse {
-  bookings: Booking[];
-  stats: {
-    totalToday: number;
-    pendingApprovals: number;
-    revenue: number;
-  };
+interface OtpFormData {
+  otp: string;
 }
 
 export default function BookingPage() {
-  const [data, setData] = useState<BookingsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { 
+    bookings, 
+    stats, 
+    pagination, 
+    isLoading, 
+    fetchBookings, 
+    updateBookingStatus 
+  } = useBookingStore();
+
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [otpSearchTerm, setOtpSearchTerm] = useState('');
+  
+  // Pagination & Search state
+  const [pageSize, setPageSize] = useState(10);
+  const [currentCursor, setCurrentCursor] = useState<string | undefined>(undefined);
+  const [previousCursors, setPreviousCursors] = useState<(string | undefined)[]>([]);
 
-  const fetchBookings = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get('/bookings');
-      setData(response.data);
-    } catch (error) {
-      let message = 'Failed to fetch bookings';
-      if (isAxiosError(error) && error.response?.data?.message) {
-        message = error.response.data.message;
-      }
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // react-hook-form for OTP verification search
+  const { register, handleSubmit, reset } = useForm<OtpFormData>();
 
   useEffect(() => {
-    fetchBookings();
-  }, []);
+    setCurrentCursor(undefined);
+    setPreviousCursors([]);
+    fetchBookings({ limit: pageSize });
+  }, [fetchBookings, pageSize]);
+
+  const handleNextPage = async () => {
+    if (!pagination.nextCursor) return;
+    setPreviousCursors((prev) => [...prev, currentCursor]);
+    setCurrentCursor(pagination.nextCursor);
+    await fetchBookings({
+      cursor: pagination.nextCursor,
+      limit: pageSize,
+    });
+  };
+
+  const handlePreviousPage = async () => {
+    if (previousCursors.length === 0) return;
+    const stack = [...previousCursors];
+    const prevCursor = stack.pop();
+    setPreviousCursors(stack);
+    setCurrentCursor(prevCursor);
+    await fetchBookings({
+      cursor: prevCursor,
+      limit: pageSize,
+    });
+  };
 
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
-      await axios.patch('/bookings', { bookingId: id, status });
+      await updateBookingStatus(id, status);
       toast.success(`Booking ${status.toLowerCase()} successfully`);
       setIsDetailsOpen(false);
-      fetchBookings();
-    } catch (error: unknown) {
-      const message = isAxiosError(error) && error.response?.data?.message 
-        ? error.response.data.message 
-        : 'Something went wrong';
-      toast.error(message);
+    } catch (error: any) {
+      toast.error(error.message || 'Something went wrong');
     }
   };
 
@@ -90,29 +83,29 @@ export default function BookingPage() {
     setIsDetailsOpen(true);
   };
 
-  const handleOtpSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otpSearchTerm.trim()) {
+  const onOtpSubmit = (data: OtpFormData) => {
+    const otpSearchTerm = data.otp.trim();
+    if (!otpSearchTerm) {
       toast.error('Please enter an OTP');
       return;
     }
 
-    const today = new Date().toISOString().split('T')[0];
-    const booking = data?.bookings.find(b => 
+    const todayStr = new Date().toISOString().split('T')[0];
+    const booking = bookings.find((b) => 
       b.otp?.toLowerCase() === otpSearchTerm.toLowerCase() &&
-      new Date(b.bookingDate).toISOString().split('T')[0] === today
+      new Date(b.bookingDate).toISOString().split('T')[0] === todayStr
     );
 
     if (booking) {
       openDetails(booking);
-      setOtpSearchTerm('');
+      reset();
       toast.success('Booking found!');
     } else {
       toast.error('No booking found for today with this OTP');
     }
   };
 
-  if (loading && !data) {
+  if (isLoading && bookings.length === 0) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -120,10 +113,10 @@ export default function BookingPage() {
     );
   }
 
-  const today = new Date().toISOString().split('T')[0];
-  const todayBookings = data?.bookings.filter(b => 
-    new Date(b.bookingDate).toISOString().split('T')[0] === today
-  ) || [];
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayBookings = bookings.filter((b) => 
+    new Date(b.bookingDate).toISOString().split('T')[0] === todayStr
+  );
 
   return (
     <div className="space-y-8 pb-10">
@@ -134,12 +127,17 @@ export default function BookingPage() {
             Monitor slots, approve requests, and manage your venue schedule.
           </p>
         </div>
-        <Button variant="outline" size="icon" onClick={fetchBookings} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={() => fetchBookings({ cursor: currentCursor, limit: pageSize })} 
+          disabled={isLoading}
+        >
+          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
         </Button>
       </div>
 
-      {data && <BookingStats stats={data.stats} />}
+      {stats && <BookingStats stats={stats} />}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <div className="md:col-span-2 lg:col-span-1 space-y-4">
@@ -149,89 +147,86 @@ export default function BookingPage() {
                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                 Today&apos;s Bookings
               </h3>
-              <Badge variant="secondary">{todayBookings.length} Slots</Badge>
+              <Badge variant="secondary">{todayBookings.length}</Badge>
             </div>
             
-            <form onSubmit={handleOtpSearch} className="relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-              <Input
-                placeholder="Enter OTP to verify..."
-                className="pl-10 pr-20 bg-background/50 border-muted focus-visible:ring-primary h-11"
-                value={otpSearchTerm}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtpSearchTerm(e.target.value)}
-              />
-              <Button 
-                type="submit" 
-                size="sm" 
-                className="absolute right-1.5 top-1.5 h-8 px-3 rounded-lg"
-              >
-                Verify
-              </Button>
+            <form onSubmit={handleSubmit(onOtpSubmit)} className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Verify OTP..."
+                  className="pl-8 uppercase font-mono text-sm"
+                  {...register('otp', { required: true })}
+                />
+              </div>
+              <Button type="submit" size="sm">Verify</Button>
             </form>
 
-            <div className="space-y-2 mt-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-              {todayBookings.length === 0 ? (
-                <div className="text-center py-8 border-2 border-dashed rounded-lg">
-                  <p className="text-sm text-muted-foreground">No bookings for today</p>
-                </div>
-              ) : (
-                todayBookings.map((booking) => (
-                  <div 
-                    key={booking.id}
-                    onClick={() => openDetails(booking)}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-background/50 hover:bg-accent/50 cursor-pointer transition-all group"
-                  >
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium leading-none group-hover:text-primary transition-colors">
-                        {booking.user.fullName}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {booking.startTime} - {booking.endTime}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      {booking.otp && (
-                        <Badge variant="outline" className="font-mono text-[10px] tracking-wider">
-                          {booking.otp}
-                        </Badge>
-                      )}
-                      <p className="text-[10px] text-muted-foreground mt-1 capitalize">
-                        {booking.status.toLowerCase()}
-                      </p>
-                    </div>
+            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+              {todayBookings.map((b) => (
+                <div 
+                  key={b.id} 
+                  onClick={() => openDetails(b)}
+                  className="p-3 border rounded-lg hover:border-primary cursor-pointer transition-colors space-y-2 text-sm bg-background"
+                >
+                  <div className="flex justify-between items-start">
+                    <span className="font-medium">{b.user.fullName}</span>
+                    <Badge variant={b.status === 'CONFIRMED' ? 'default' : 'secondary'} className="text-[10px]">
+                      {b.status}
+                    </Badge>
                   </div>
-                ))
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{b.court.name}</span>
+                    <span>{b.startTime} - {b.endTime}</span>
+                  </div>
+                </div>
+              ))}
+              {todayBookings.length === 0 && (
+                <div className="text-center py-6 text-xs text-muted-foreground">
+                  No bookings scheduled for today.
+                </div>
               )}
             </div>
           </div>
         </div>
 
-        <div className="md:col-span-2 lg:col-span-2">
-          <Tabs defaultValue="list" className="w-full">
+        <div className="md:col-span-2 space-y-6">
+          <Tabs defaultValue="table" className="w-full">
             <div className="flex items-center justify-between mb-4">
-              <TabsList className="bg-muted/50 p-1">
-                <TabsTrigger value="list" className="rounded-md">List View</TabsTrigger>
-                <TabsTrigger value="calendar" className="rounded-md">Calendar View</TabsTrigger>
+              <TabsList>
+                <TabsTrigger value="table">Table View</TabsTrigger>
+                <TabsTrigger value="calendar">Calendar View</TabsTrigger>
               </TabsList>
             </div>
-            
-            <TabsContent value="list" className="space-y-4 outline-none">
-              {data && <BookingTable bookings={data.bookings} onViewDetails={openDetails} />}
+
+            <TabsContent value="table" className="space-y-4">
+              <BookingTable bookings={bookings} onViewDetails={openDetails} />
+              <DataTablePagination
+                pageSize={pageSize}
+                setPageSize={setPageSize}
+                handlePreviousPage={handlePreviousPage}
+                handleNextPage={handleNextPage}
+                isLoading={isLoading}
+                hasPreviousPage={previousCursors.length > 0}
+                hasNextPage={pagination.hasNextPage}
+              />
             </TabsContent>
-            
-            <TabsContent value="calendar" className="outline-none">
-              {data && <BookingCalendar bookings={data.bookings} />}
+
+            <TabsContent value="calendar">
+              <BookingCalendar bookings={bookings} />
             </TabsContent>
           </Tabs>
         </div>
       </div>
 
-      <BookingDetails 
-        booking={selectedBooking} 
-        isOpen={isDetailsOpen} 
-        onClose={() => setIsDetailsOpen(false)} 
-        onStatusUpdate={handleUpdateStatus}
-      />
+      {selectedBooking && (
+        <BookingDetails
+          booking={selectedBooking}
+          isOpen={isDetailsOpen}
+          onClose={() => setIsDetailsOpen(false)}
+          onStatusUpdate={handleUpdateStatus}
+        />
+      )}
     </div>
   );
 }

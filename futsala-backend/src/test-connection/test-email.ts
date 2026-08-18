@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import env from './config/env.config';
+import env from '../config/env.config';
 
 const testEmail = async () => {
   console.log('Testing Email Configuration...');

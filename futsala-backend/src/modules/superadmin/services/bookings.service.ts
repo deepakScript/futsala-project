@@ -1,14 +1,18 @@
 import { superAdminBookingsRepository } from '../repositories/bookings.repository';
 import { AppError, ErrorCode } from '../../../utils/customError';
+import { buildCursorPage, CursorPaginationParams } from '../utils/pagination';
 
 export class SuperAdminBookingsService {
   async listBookings(params: {
+    cursor?: string;
+    limit: number;
     venueId?: string;
     status?: string;
     date?: string;
     search?: string;
   }) {
-    return superAdminBookingsRepository.findAll(params);
+    const bookings = await superAdminBookingsRepository.findAll(params);
+    return buildCursorPage(bookings, params.limit);
   }
 
   async updateBooking(
@@ -27,8 +31,8 @@ export class SuperAdminBookingsService {
 
     const updatedBooking = await superAdminBookingsRepository.update(id, updateData);
 
-    if (data.paymentStatus === 'REFUNDED' && booking.payment) {
-      await superAdminBookingsRepository.updatePaymentStatus(booking.payment.id, 'REFUNDED');
+    if (data.paymentStatus && booking.payment) {
+      await superAdminBookingsRepository.updatePaymentStatus(booking.payment.id, data.paymentStatus as any);
     }
 
     return updatedBooking;

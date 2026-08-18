@@ -1,4 +1,4 @@
-// Prisma Schema for Multi-Tenant Futsal Booking SaaS App
+// Prisma Schema for Simple Multi-Tenant Futsal Booking SaaS App
 // Database: PostgreSQL
 
 generator client {
@@ -16,39 +16,8 @@ datasource db {
 
 enum UserRole {
   SUPERADMIN
-  ADMIN
-  VENUE_OWNER
   TENANT_ADMIN
-  STAFF
   CUSTOMER
-}
-
-enum TenantRole {
-  OWNER
-  ADMIN
-  STAFF
-  MANAGER
-}
-
-enum TenantStatus {
-  ACTIVE
-  SUSPENDED
-  INACTIVE
-  PENDING
-}
-
-enum SubscriptionPlan {
-  FREE
-  BASIC
-  PREMIUM
-  ENTERPRISE
-}
-
-enum SubscriptionStatus {
-  ACTIVE
-  EXPIRED
-  CANCELLED
-  TRIAL
 }
 
 enum BookingStatus {
@@ -66,100 +35,49 @@ enum PaymentStatus {
 }
 
 // --------------------------------------
-// Multi-Tenant Core Models
+// 1. Simple Tenant Model (Organization / Futsal Chain)
 // --------------------------------------
 
 model Tenant {
-  id                 String             @id @default(uuid())
-  name               String
-  slug               String             @unique
-  email              String?
-  phoneNumber        String?
-  address            String?
-  city               String?
-  logo               String?
-  coverImage         String?
-  domain             String?            @unique
-  status             TenantStatus       @default(ACTIVE)
-  subscriptionPlan   SubscriptionPlan   @default(BASIC)
-  subscriptionStatus SubscriptionStatus @default(TRIAL)
-  trialEndsAt        DateTime?
-  subscriptionEndsAt DateTime?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  email       String?
+  phoneNumber String?
+  address     String?
+  city        String?
+  logo        String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
-  users         User[]
-  members       TenantMember[]
-  venues        Venue[]
-  courts        Court[]
-  bookings      Booking[]
-  payments      Payment[]
-  reviews       Review[]
-  notifications Notification[]
-  settings      TenantSetting?
+  users       User[]
+  venues      Venue[]
 
   @@map("tenants")
 }
 
-model TenantSetting {
-  id                      String   @id @default(uuid())
-  tenantId                String   @unique
-  currency                String   @default("NPR")
-  taxRate                 Float    @default(0)
-  advanceBookingDays      Int      @default(30)
-  cancellationWindowHours Int      @default(24)
-  autoConfirmBookings     Boolean  @default(false)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@map("tenant_settings")
-}
-
-model TenantMember {
-  id        String     @id @default(uuid())
-  tenantId  String
-  userId    String
-  role      TenantRole @default(STAFF)
-  isPrimary Boolean    @default(false)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([tenantId, userId])
-  @@index([tenantId])
-  @@index([userId])
-  @@map("tenant_members")
-}
-
 // --------------------------------------
-// User Model
+// 2. User Model
 // --------------------------------------
 
 model User {
-  id          String   @id @default(uuid())
-  email       String   @unique
-  password    String
-  fullName    String
-  phoneNumber String
-  role        UserRole @default(CUSTOMER)
-  isVerified  Boolean  @default(false)
-  tenantId    String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  password            String
+  fullName            String
+  phoneNumber         String
+  role                UserRole             @default(CUSTOMER)
+  isVerified          Boolean              @default(false)
+  tenantId            String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
   // Relations
   tenant              Tenant?              @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  tenantMemberships   TenantMember[]
-  bookings            Booking[]
   venues              Venue[]
-  reviews             Review[]
-  notifications       Notification[]
+  bookings            Booking[]
   passwordResetTokens PasswordResetToken[]
 
   @@index([tenantId])
@@ -173,18 +91,17 @@ model PasswordResetToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("password_reset_tokens")
 }
 
 // --------------------------------------
-// Venue & Court Models
+// 3. Venue & Court Models
 // --------------------------------------
 
 model Venue {
-  id           String   @id @default(uuid())
-  tenantId     String
+  id           String    @id @default(uuid())
   name         String
   description  String
   address      String
@@ -194,44 +111,43 @@ model Venue {
   phoneNumber  String
   email        String?
   images       String[]
-  amenities    String[] // ["Parking", "Changing Room", "Cafeteria"]
-  isActive     Boolean  @default(true)
-  rating       Float    @default(0)
-  totalReviews Int      @default(0)
+  amenities    String[]
+  isActive     Boolean   @default(true)
+  rating       Float     @default(0)
+  totalReviews Int       @default(0)
   ownerId      String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  tenantId     String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  owner    User      @relation(fields: [ownerId], references: [id])
-  courts   Court[]
-  reviews  Review[]
-  bookings Booking[]
+  // Relations
+  owner        User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  tenant       Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  courts       Court[]
+  bookings     Booking[]
 
-  @@index([tenantId])
   @@index([ownerId])
+  @@index([tenantId])
   @@map("venues")
 }
 
 model Court {
-  id           String   @id @default(uuid())
-  tenantId     String
-  name         String   // "Court A", "Court B"
+  id           String     @id @default(uuid())
+  name         String     // "Court A", "Court B"
   venueId      String
   pricePerHour Float
-  isActive     Boolean  @default(true)
-  courtType    String?  // "5-a-side", "7-a-side"
-  surfaceType  String?  // "Artificial Grass", "Natural Grass", "Hard"
-  isIndoor     Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  isActive     Boolean    @default(true)
+  courtType    String?    // "5-a-side", "7-a-side"
+  surfaceType  String?    // "Artificial Grass", "Natural Grass", "Hard"
+  isIndoor     Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
-  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  venue     Venue      @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  timeSlots TimeSlot[]
-  bookings  Booking[]
+  // Relations
+  venue        Venue      @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  timeSlots    TimeSlot[]
+  bookings     Booking[]
 
-  @@index([tenantId])
   @@index([venueId])
   @@map("courts")
 }
@@ -246,102 +162,60 @@ model TimeSlot {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  court Court @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  // Relations
+  court       Court    @relation(fields: [courtId], references: [id], onDelete: Cascade)
 
   @@unique([courtId, startTime, dayOfWeek])
   @@map("time_slots")
 }
 
 // --------------------------------------
-// Booking & Payment Models
+// 4. Booking & Payment Models
 // --------------------------------------
 
 model Booking {
-  id            String        @id @default(uuid())
-  tenantId      String?
-  venueId       String?
-  userId        String
-  courtId       String
-  bookingDate   DateTime
-  startTime     String
-  endTime       String
-  totalHours    Float
-  totalPrice    Float
-  status        BookingStatus @default(PENDING)
-  paymentStatus PaymentStatus @default(PENDING)
-  notes         String?
-  otp           String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id              String        @id @default(uuid())
+  venueId         String?
+  userId          String
+  courtId         String
+  bookingDate     DateTime
+  startTime       String        // "08:00"
+  endTime         String        // "09:00"
+  totalHours      Float
+  totalPrice      Float
+  status          BookingStatus @default(PENDING)
+  paymentStatus   PaymentStatus @default(PENDING)
+  notes           String?
+  otp             String?
+  idempotencyKey  String?       @unique
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  tenant  Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  venue   Venue?   @relation(fields: [venueId], references: [id], onDelete: SetNull)
-  user    User     @relation(fields: [userId], references: [id])
-  court   Court    @relation(fields: [courtId], references: [id])
-  payment Payment?
+  // Relations
+  venue           Venue?        @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  court           Court         @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  payment         Payment?
 
-  @@index([tenantId])
-  @@index([tenantId, status])
   @@index([userId])
   @@index([venueId])
+  @@index([courtId])
   @@map("bookings")
 }
 
 model Payment {
   id            String        @id @default(uuid())
-  tenantId      String?
   bookingId     String        @unique
   amount        Float
-  paymentMethod String        // "Khalti", "eSewa", "Card", "Cash"
-  transactionId String?
+  paymentMethod String        // "KHALTI", "eSewa", "Cash", "Card"
+  transactionId String?       // Khalti pidx or external transaction ref
   status        PaymentStatus @default(PENDING)
   paidAt        DateTime?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  tenant  Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  booking Booking @relation(fields: [bookingId], references: [id])
+  // Relations
+  booking       Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
-  @@index([tenantId])
   @@map("payments")
-}
-
-// --------------------------------------
-// Review & Notification Models
-// --------------------------------------
-
-model Review {
-  id        String   @id @default(uuid())
-  tenantId  String?
-  userId    String
-  venueId   String
-  rating    Int      // 1-5
-  comment   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  user   User    @relation(fields: [userId], references: [id])
-  venue  Venue   @relation(fields: [venueId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, venueId])
-  @@index([tenantId])
-  @@map("reviews")
-}
-
-model Notification {
-  id        String   @id @default(uuid())
-  tenantId  String?
-  userId    String
-  title     String
-  message   String
-  type      String   // "BOOKING", "PAYMENT", "REMINDER"
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  user   User    @relation(fields: [userId], references: [id])
-
-  @@index([tenantId])
-  @@map("notifications")
 }

@@ -60,6 +60,7 @@ import { format } from "date-fns"
 export default function PaymentsPage() {
   const { 
     transactions, 
+    pagination,
     stats, 
     payouts, 
     isLoading, 
@@ -72,22 +73,45 @@ export default function PaymentsPage() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [methodFilter, setMethodFilter] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
+  const [pageSize, setPageSize] = useState(10)
+  const [currentCursor, setCurrentCursor] = useState<string | undefined>(undefined)
+  const [previousCursors, setPreviousCursors] = useState<(string | undefined)[]>([])
   
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false)
   const [commissionRate, setCommissionRate] = useState("2")
 
   useEffect(() => {
     fetchStats()
-    fetchTransactions()
+    fetchTransactions({ limit: pageSize })
     fetchPayouts()
-  }, [fetchStats, fetchTransactions, fetchPayouts])
+  }, [fetchStats, fetchTransactions, fetchPayouts, pageSize])
+
+  const buildTransactionFilters = (cursor?: string) => ({
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    method: methodFilter === 'all' ? undefined : methodFilter,
+    cursor,
+    limit: pageSize,
+  })
+
+  const handleNextPage = async () => {
+    if (!pagination.nextCursor) return
+    setPreviousCursors((prev) => [...prev, currentCursor])
+    setCurrentCursor(pagination.nextCursor)
+    await fetchTransactions(buildTransactionFilters(pagination.nextCursor))
+  }
+
+  const handlePreviousPage = async () => {
+    if (previousCursors.length === 0) return
+    const stack = [...previousCursors]
+    const prevCursor = stack.pop()
+    setPreviousCursors(stack)
+    setCurrentCursor(prevCursor)
+    await fetchTransactions(buildTransactionFilters(prevCursor))
+  }
 
   const handleRefresh = () => {
     fetchStats()
-    fetchTransactions({ 
-      status: statusFilter === "all" ? undefined : statusFilter, 
-      method: methodFilter === "all" ? undefined : methodFilter 
-    })
+    fetchTransactions(buildTransactionFilters(currentCursor))
     fetchPayouts()
   }
 
@@ -298,6 +322,29 @@ export default function PaymentsPage() {
                   )}
                 </TableBody>
               </Table>
+              <div className="flex items-center justify-between border-t p-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Rows per page</span>
+                  <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
+                    <SelectTrigger className="h-8 w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={isLoading || previousCursors.length === 0}>
+                    Previous
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleNextPage} disabled={isLoading || !pagination.hasNextPage}>
+                    Next
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

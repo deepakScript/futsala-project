@@ -15,7 +15,7 @@ export class SuperAdminAuthService {
       throw new AppError('Invalid email or password', 401, ErrorCode.INVALID_CREDENTIALS);
     }
 
-    if (user.role !== 'ADMIN') {
+    if (user.role !== 'TENANT_ADMIN' && user.role !== 'SUPERADMIN') {
       throw new AppError('Access denied. Admin privileges required.', 403, ErrorCode.FORBIDDEN);
     }
 

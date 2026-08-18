@@ -6,7 +6,7 @@ import { cookieOptions } from '../../../utils/jwt';
 export const login = asyncHandler(async (req: Request, res: Response) => {
   const result = await adminAuthService.login(req.body);
   res.cookie('token', result.token, { ...result.cookieOptions, maxAge: 60 * 60 * 24 * 1000 });
-  res.json({ message: 'Login successful', user: result.user });
+  res.json({ message: 'Login successful', user: result.user, token: result.token });
 });
 
 export const logout = (_req: Request, res: Response) => {

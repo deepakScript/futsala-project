@@ -60,20 +60,6 @@ export class FutsalRepository {
             phoneNumber: true,
           },
         },
-        reviews: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                fullName: true,
-              },
-            },
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-          take: 10,
-        },
       },
     });
   }
