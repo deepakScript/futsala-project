@@ -15,10 +15,8 @@ export class UserRepository {
   }
 
   async deleteAccount(userId: string) {
-    return prisma.$transaction(async (tx) => {
-      await tx.booking.deleteMany({ where: { userId } });
-      await tx.venue.deleteMany({ where: { ownerId: userId } });
-      return tx.user.delete({ where: { id: userId } });
+    return prisma.user.delete({
+      where: { id: userId },
     });
   }
 }

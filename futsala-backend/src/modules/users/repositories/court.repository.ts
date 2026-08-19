@@ -15,14 +15,7 @@ export class CourtRepository {
         isActive: true,
       },
       include: {
-        timeSlots: {
-          orderBy: {
-            startTime: 'asc',
-          },
-        },
-        bookings: {
-          // Note: we can filter bookings by date via a service query
-        },
+        bookings: true,
       },
     });
   }
@@ -39,15 +32,6 @@ export class CourtRepository {
         isActive: true,
       },
       include: {
-        timeSlots: {
-          where: {
-            dayOfWeek,
-            isAvailable: true,
-          },
-          orderBy: {
-            startTime: 'asc',
-          },
-        },
         bookings: {
           where: {
             bookingDate: {

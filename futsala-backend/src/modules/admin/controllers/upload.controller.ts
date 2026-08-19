@@ -8,3 +8,4 @@ export const uploadVenueImage = asyncHandler(async (req: Request, res: Response)
   const url = await adminUploadService.uploadVenueImage(req.file, venueId, ownerId);
   res.json({ url, message: 'Upload successful' });
 });
+  

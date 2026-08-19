@@ -1,5 +1,5 @@
 import prisma from '../../../config/prismaClient';
-import { User, UserRole, PasswordResetToken } from '@prisma/client';
+import { User, UserRole } from '@prisma/client';
 
 export class AuthRepository {
   async findByEmail(email: string): Promise<User | null> {
@@ -40,29 +40,7 @@ export class AuthRepository {
       data: { password: passwordHash },
     });
   }
-
-  async createPasswordResetToken(data: {
-    userId: string;
-    token: string;
-    expiresAt: Date;
-  }): Promise<PasswordResetToken> {
-    return prisma.passwordResetToken.create({
-      data,
-    });
-  }
-
-  async findPasswordResetToken(token: string): Promise<(PasswordResetToken & { user: User }) | null> {
-    return prisma.passwordResetToken.findFirst({
-      where: { token },
-      include: { user: true },
-    });
-  }
-
-  async deletePasswordResetToken(id: string): Promise<PasswordResetToken> {
-    return prisma.passwordResetToken.delete({
-      where: { id },
-    });
-  }
 }
 
 export const authRepository = new AuthRepository();
+

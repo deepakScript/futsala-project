@@ -14,7 +14,10 @@ export class AdminTimeSlotsService {
     if (!venue) {
       throw new AppError('Venue not found', 404, ErrorCode.VENUE_NOT_FOUND);
     }
-    return venue.courts;
+    return venue.courts.map((court) => ({
+      ...court,
+      timeSlots: [],
+    }));
   }
 
   async updateTimeSlots(courtId: string, daySchedules: DaySchedule[], ownerId: string) {
@@ -23,39 +26,19 @@ export class AdminTimeSlotsService {
     }
 
     const court = await adminTimeSlotsRepository.findCourtWithOwner(courtId);
-    if (!court || court.venue.ownerId !== ownerId) {
+    const isOwner = court?.venue.tenant.users.some((user) => user.id === ownerId);
+    if (!court || !isOwner) {
       throw new AppError('Unauthorized or court not found', 403, ErrorCode.FORBIDDEN);
     }
 
-    const newTimeSlots: {
-      courtId: string;
-      startTime: string;
-      endTime: string;
-      dayOfWeek: number;
-      isAvailable: boolean;
-    }[] = [];
-
-    for (const schedule of daySchedules) {
-      const { dayOfWeek, openTime, closeTime, blockedSlots } = schedule;
-      if (!openTime || !closeTime) continue;
-
-      const openHour = parseInt(openTime.split(':')[0]);
-      const closeHour = parseInt(closeTime.split(':')[0]);
-
-      for (let hour = openHour; hour < closeHour; hour++) {
-        const startTime = `${hour.toString().padStart(2, '0')}:00`;
-        const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
-        newTimeSlots.push({
-          courtId,
-          startTime,
-          endTime,
-          dayOfWeek,
-          isAvailable: !blockedSlots.includes(startTime),
-        });
-      }
+    const validSchedule = daySchedules.find((s) => s.openTime && s.closeTime);
+    if (validSchedule) {
+      await adminTimeSlotsRepository.updateCourtHours(
+        courtId,
+        validSchedule.openTime,
+        validSchedule.closeTime
+      );
     }
-
-    await adminTimeSlotsRepository.replaceTimeSlots(courtId, newTimeSlots);
   }
 }
 

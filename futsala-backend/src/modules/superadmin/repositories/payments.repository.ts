@@ -44,7 +44,14 @@ export class SuperAdminPaymentsRepository {
             },
           },
         },
-        owner: { select: { fullName: true, email: true } },
+        tenant: {
+          include: {
+            users: {
+              where: { role: 'TENANT_ADMIN' },
+              select: { fullName: true, email: true },
+            },
+          },
+        },
       },
     });
   }

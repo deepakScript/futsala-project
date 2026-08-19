@@ -4,7 +4,7 @@ import { Prisma, BookingStatus } from '@prisma/client';
 export class AdminVenueRepository {
   async findByOwnerId(ownerId: string) {
     return prisma.venue.findFirst({
-      where: { ownerId },
+      where: { tenant: { users: { some: { id: ownerId } } } },
       include: { courts: true },
     });
   } 
@@ -21,7 +21,7 @@ export class AdminVenueRepository {
     }
   ) {
     return prisma.venue.update({
-      where: { id, ownerId },
+      where: { id },
       data,
     });
   }
@@ -53,7 +53,7 @@ export class AdminVenueRepository {
 
   async pushImage(id: string, ownerId: string, imageUrl: string) {
     return prisma.venue.update({
-      where: { id, ownerId },
+      where: { id },
       data: { images: { push: imageUrl } },
     });
   }
@@ -72,7 +72,7 @@ export class AdminBookingRepository {
     const { ownerId, status, search, startDate, endDate } = params;
 
     const where: Prisma.BookingWhereInput = {
-      court: { venue: { ownerId } },
+      court: { venue: { tenant: { users: { some: { id: ownerId } } } } },
     };
 
     if (status && status !== ('ALL' as BookingStatus)) {
@@ -103,17 +103,18 @@ export class AdminBookingRepository {
   }
 
   async countStats(ownerId: string) {
+    const venueFilter = { tenant: { users: { some: { id: ownerId } } } };
     const totalToday = await prisma.booking.count({
       where: {
-        court: { venue: { ownerId } },
+        court: { venue: venueFilter },
         createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
       },
     });
     const pendingApprovals = await prisma.booking.count({
-      where: { court: { venue: { ownerId } }, status: 'PENDING' },
+      where: { court: { venue: venueFilter }, status: 'PENDING' },
     });
     const totalRevenueAgg = await prisma.booking.aggregate({
-      where: { court: { venue: { ownerId } }, paymentStatus: 'PAID' },
+      where: { court: { venue: venueFilter }, paymentStatus: 'PAID' },
       _sum: { totalPrice: true },
     });
     return {
@@ -126,7 +127,23 @@ export class AdminBookingRepository {
   async findById(bookingId: string) {
     return prisma.booking.findUnique({
       where: { id: bookingId },
-      include: { court: { include: { venue: { select: { ownerId: true } } } } },
+      include: {
+        court: {
+          include: {
+            venue: {
+              include: {
+                tenant: {
+                  include: {
+                    users: {
+                      select: { id: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
   }
 

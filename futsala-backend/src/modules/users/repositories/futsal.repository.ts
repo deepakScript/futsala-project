@@ -22,17 +22,17 @@ export class FutsalRepository {
             pricePerHour: true,
           },
         },
-        owner: {
+        tenant: {
           select: {
             id: true,
-            fullName: true,
+            name: true,
             email: true,
             phoneNumber: true,
           },
         },
       },
       orderBy: {
-        rating: 'desc',
+        createdAt: 'desc',
       },
       take: limit,
     });
@@ -46,16 +46,11 @@ export class FutsalRepository {
           where: {
             isActive: true,
           },
-          include: {
-            timeSlots: {
-              orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
-            },
-          },
         },
-        owner: {
+        tenant: {
           select: {
             id: true,
-            fullName: true,
+            name: true,
             email: true,
             phoneNumber: true,
           },
@@ -65,7 +60,7 @@ export class FutsalRepository {
   }
 
   async search(query: SearchQueryDto) {
-    const { location, price, city, courtType, minRating } = query;
+    const { location, price, city, courtType } = query;
 
     const whereClause: any = {
       isActive: true,
@@ -80,13 +75,6 @@ export class FutsalRepository {
 
     if (city) {
       whereClause.city = { contains: city, mode: 'insensitive' };
-    }
-
-    if (minRating) {
-      const rating = parseFloat(minRating);
-      if (!isNaN(rating)) {
-        whereClause.rating = { gte: rating };
-      }
     }
 
     const courtWhere: any = {
@@ -118,16 +106,16 @@ export class FutsalRepository {
             pricePerHour: true,
           },
         },
-        owner: {
+        tenant: {
           select: {
             id: true,
-            fullName: true,
+            name: true,
             phoneNumber: true,
           },
         },
       },
       orderBy: {
-        rating: 'desc',
+        createdAt: 'desc',
       },
     });
 

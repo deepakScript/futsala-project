@@ -14,7 +14,7 @@ export class AdminCustomerRepository {
       where: {
         court: {
           venue: {
-            ownerId,
+            tenant: { users: { some: { id: ownerId } } },
           },
         },
         ...(search

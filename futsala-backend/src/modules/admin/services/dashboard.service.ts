@@ -11,7 +11,7 @@ export class AdminDashboardService {
     const totalRevenue = allPaidBookings.reduce((sum, b) => sum + b.totalPrice, 0);
     const totalBookings = allPaidBookings.length;
     const avgRating =
-      venues.length > 0 ? venues.reduce((sum, v) => sum + v.rating, 0) / venues.length : 0;
+      venues.length > 0 ? venues.reduce((sum, v) => sum + ((v as any).rating || 0), 0) / venues.length : 0;
 
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);

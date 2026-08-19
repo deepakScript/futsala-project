@@ -62,7 +62,9 @@ export class BookingService {
         endTime: b.endTime,
       }));
 
-      court.timeSlots.forEach((slot) => {
+      const slots = this.generateTimeSlots(court.openTime, court.closeTime, court.slotDuration);
+
+      slots.forEach((slot) => {
         // Check if slot overlaps with any booking
         const isBooked = bookedSlots.some((booked) => {
           return !(slot.endTime <= booked.startTime || slot.startTime >= booked.endTime);
@@ -249,5 +251,37 @@ export class BookingService {
     const [sh, sm] = start.split(':').map(Number);
     const [eh, em] = end.split(':').map(Number);
     return (eh * 60 + em - (sh * 60 + sm)) / 60;
+  }
+
+  private generateTimeSlots(
+    openTime = '06:00',
+    closeTime = '23:00',
+    slotDuration = 60
+  ): { startTime: string; endTime: string }[] {
+    const slots: { startTime: string; endTime: string }[] = [];
+    const [openH, openM] = (openTime || '06:00').split(':').map(Number);
+    const [closeH, closeM] = (closeTime || '23:00').split(':').map(Number);
+
+    let currentMinutes = openH * 60 + (openM || 0);
+    const endMinutes = closeH * 60 + (closeM || 0);
+    const duration = slotDuration > 0 ? slotDuration : 60;
+
+    while (currentMinutes + duration <= endMinutes) {
+      const startH = Math.floor(currentMinutes / 60).toString().padStart(2, '0');
+      const startM = (currentMinutes % 60).toString().padStart(2, '0');
+
+      const nextMinutes = currentMinutes + duration;
+      const endH = Math.floor(nextMinutes / 60).toString().padStart(2, '0');
+      const endM = (nextMinutes % 60).toString().padStart(2, '0');
+
+      slots.push({
+        startTime: `${startH}:${startM}`,
+        endTime: `${endH}:${endM}`,
+      });
+
+      currentMinutes = nextMinutes;
+    }
+
+    return slots;
   }
 }

@@ -74,7 +74,8 @@ export class AdminBookingService {
     }
 
     const booking = await adminBookingRepository.findById(bookingId);
-    if (!booking || booking.court.venue.ownerId !== ownerId) {
+    const isOwner = booking?.court.venue.tenant.users.some((user) => user.id === ownerId);
+    if (!booking || !isOwner) {
       throw new AppError('Unauthorized or booking not found', 403, ErrorCode.FORBIDDEN);
     }
 

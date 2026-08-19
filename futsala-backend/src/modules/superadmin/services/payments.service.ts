@@ -29,11 +29,12 @@ export class SuperAdminPaymentsService {
         });
       });
       const commission = grossRevenue * COMMISSION_RATE;
+      const owner = venue.tenant?.users?.[0];
       return {
         venueId: venue.id,
         venueName: venue.name,
-        ownerName: venue.owner.fullName,
-        ownerEmail: venue.owner.email,
+        ownerName: owner?.fullName || venue.tenant?.name || 'Unknown',
+        ownerEmail: owner?.email || venue.tenant?.email || 'N/A',
         grossRevenue,
         commission,
         netPayout: grossRevenue - commission,

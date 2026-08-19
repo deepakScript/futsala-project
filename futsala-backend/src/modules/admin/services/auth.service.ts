@@ -48,13 +48,12 @@ export class AdminAuthService {
 
     const resetToken = crypto.randomBytes(32).toString('hex');
     const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+    const { redis } = await import('../../../config/redis');
+    const ttlSeconds = 15 * 60; // 15 mins
 
-    await adminAuthRepository.createPasswordResetToken({
-      userId: user.id,
-      token: hashedToken,
-      expiresAt,
-    });
+    const resetData = JSON.stringify({ userId: user.id, email: normalizedEmail, token: hashedToken });
+    await redis.set(`admin_reset_token:${normalizedEmail}`, resetData, 'EX', ttlSeconds);
+    await redis.set(`admin_reset_token_lookup:${hashedToken}`, normalizedEmail, 'EX', ttlSeconds);
 
     const resetUrl = `${env.CLIENT_URL}/admin/reset-password?token=${resetToken}`;
     await emailQueue.add('password-reset', {
@@ -76,9 +75,12 @@ export class AdminProfileService {
     }
 
     const { default: prisma } = await import('../../../config/prismaClient');
-    const venue = await prisma.venue.findFirst({ where: { ownerId: adminId } });
+    const venue = user.tenantId
+      ? await prisma.venue.findFirst({ where: { tenantId: user.tenantId } })
+      : null;
 
     return {
+      
       user: {
         id: user.id,
         email: user.email,

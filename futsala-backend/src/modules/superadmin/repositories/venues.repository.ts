@@ -18,14 +18,13 @@ export class SuperAdminVenuesRepository {
                 { name: { contains: search, mode: 'insensitive' } },
                 { city: { contains: search, mode: 'insensitive' } },
                 { address: { contains: search, mode: 'insensitive' } },
-                { owner: { fullName: { contains: search, mode: 'insensitive' } } },
-                { owner: { email: { contains: search, mode: 'insensitive' } } },
+                { tenant: { name: { contains: search, mode: 'insensitive' } } },
               ],
             }
           : {}),
       },
       include: {
-        owner: { select: { id: true, fullName: true, email: true, phoneNumber: true } },
+        tenant: { select: { id: true, name: true, email: true } },
         _count: { select: { courts: true, bookings: true } },
       },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -38,7 +37,7 @@ export class SuperAdminVenuesRepository {
     return prisma.venue.findUnique({
       where: { id },
       include: {
-        owner: true,
+        tenant: true,
         courts: true,
       },
     });
@@ -72,6 +71,10 @@ export class SuperAdminVenuesRepository {
       }
     }
 
+    if (!tenantId) {
+      throw new Error('Tenant ID is required to create a venue');
+    }
+
     return prisma.venue.create({
       data: {
         name: data.name,
@@ -79,10 +82,9 @@ export class SuperAdminVenuesRepository {
         address: data.address,
         city: data.city,
         phoneNumber: data.phoneNumber || '',
-        ownerId: data.ownerId,
         amenities: data.amenities || [],
         images: data.images || [],
-        tenantId: tenantId || null,
+        tenantId,
         isActive: true,
       },
     });

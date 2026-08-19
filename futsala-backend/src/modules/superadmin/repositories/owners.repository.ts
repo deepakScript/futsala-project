@@ -24,7 +24,11 @@ export class SuperAdminOwnersRepository {
         email: true,
         phoneNumber: true,
         createdAt: true,
-        _count: { select: { venues: true } },
+        tenant: {
+          select: {
+            _count: { select: { venues: true } },
+          },
+        },
       },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: limit + 1,
@@ -47,10 +51,14 @@ export class SuperAdminOwnersRepository {
     return prisma.user.findFirst({
       where: { id, role: 'TENANT_ADMIN' },
       include: {
-        venues: {
+        tenant: {
           include: {
-            _count: { select: { courts: true } },
-            courts: { include: { _count: { select: { bookings: true } } } },
+            venues: {
+              include: {
+                _count: { select: { courts: true } },
+                courts: { include: { _count: { select: { bookings: true } } } },
+              },
+            },
           },
         },
       },
@@ -111,7 +119,15 @@ export class SuperAdminOwnersRepository {
   }
 
   async countVenues(ownerId: string) {
-    return prisma.venue.count({ where: { ownerId } });
+    return prisma.venue.count({
+      where: {
+        tenant: {
+          users: {
+            some: { id: ownerId },
+          },
+        },
+      },
+    });
   }
 
   async delete(id: string) {
@@ -120,7 +136,13 @@ export class SuperAdminOwnersRepository {
 
   async getVenuesWithBookings(ownerId: string) {
     return prisma.venue.findMany({
-      where: { ownerId },
+      where: {
+        tenant: {
+          users: {
+            some: { id: ownerId },
+          },
+        },
+      },
       include: { courts: { include: { bookings: true } } },
     });
   }

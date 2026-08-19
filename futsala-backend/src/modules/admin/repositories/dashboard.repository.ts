@@ -3,7 +3,7 @@ import prisma from '../../../config/prismaClient';
 export class AdminDashboardRepository {
   async getOwnerVenuesWithBookings(ownerId: string) {
     return prisma.venue.findMany({
-      where: { ownerId },
+      where: { tenant: { users: { some: { id: ownerId } } } },
       include: {
         courts: {
           include: {
@@ -18,7 +18,7 @@ export class AdminDashboardRepository {
     return prisma.booking.groupBy({
       by: ['bookingDate'],
       where: {
-        court: { venue: { ownerId } },
+        court: { venue: { tenant: { users: { some: { id: ownerId } } } } },
         paymentStatus: 'PAID',
         bookingDate: { gte: daysAgo },
       },
@@ -30,14 +30,17 @@ export class AdminDashboardRepository {
   async getPeakHours(ownerId: string) {
     return prisma.booking.groupBy({
       by: ['startTime'],
-      where: { court: { venue: { ownerId } }, status: 'CONFIRMED' },
+      where: {
+        court: { venue: { tenant: { users: { some: { id: ownerId } } } } },
+        status: 'CONFIRMED',
+      },
       _count: { id: true },
     });
   }
 
   async getRecentBookings(ownerId: string) {
     return prisma.booking.findMany({
-      where: { court: { venue: { ownerId } } },
+      where: { court: { venue: { tenant: { users: { some: { id: ownerId } } } } } },
       include: {
         user: { select: { fullName: true, email: true } },
         court: { select: { name: true, venue: { select: { name: true } } } },
