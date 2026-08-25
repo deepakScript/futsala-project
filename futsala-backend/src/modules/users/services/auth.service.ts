@@ -1,5 +1,4 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { authRepository } from '../repositories/auth.repository';
 import { toUserResponseDto, UserResponseDto } from '../dtos/user.dto';
 import { AppError, ErrorCode } from '../../../utils/customError';
@@ -8,6 +7,15 @@ import crypto from 'crypto';
 import { UserRole } from '@prisma/client';
 import env from '../../../config/env.config';
 import { emailQueue } from '../../../utils/email/email.queue';
+import {
+  signAndStoreAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+  storeRefreshToken,
+  findRefreshToken,
+  deleteRefreshToken,
+  revokeAccessToken,
+} from '../../../utils/jwt';
 
 export interface AuthTokensResponse {
   user: UserResponseDto;
@@ -37,14 +45,17 @@ export class AuthService {
       password: hashedPassword,
     });
 
-    const accessToken = this.generateAccessToken(user.id, user.email, user.role);
-    const refreshToken = this.generateRefreshToken(user.id, user.email, user.role);
+    // Sign access token & store in Redis (15-min whitelist)
+    const accessToken = await signAndStoreAccessToken(
+      { userId: user.id, email: user.email, role: user.role, type: 'access' },
+      user.id
+    );
+    const refreshToken = signRefreshToken({ userId: user.id, email: user.email, role: user.role, type: 'refresh' });
 
-    return {
-      user: toUserResponseDto(user),
-      accessToken,
-      refreshToken,
-    };
+    // Persist refresh token in DB
+    await storeRefreshToken(user.id, refreshToken);
+
+    return { user: toUserResponseDto(user), accessToken, refreshToken };
   }
 
   async login(email: string, password: string): Promise<AuthTokensResponse> {
@@ -59,39 +70,58 @@ export class AuthService {
       throw new AppError('Invalid email or password', 401, ErrorCode.INVALID_CREDENTIALS);
     }
 
-    const accessToken = this.generateAccessToken(user.id, user.email, user.role);
-    const refreshToken = this.generateRefreshToken(user.id, user.email, user.role);
+    // Sign access token & store in Redis (15-min whitelist)
+    const accessToken = await signAndStoreAccessToken(
+      { userId: user.id, email: user.email, role: user.role, type: 'access' },
+      user.id
+    );
+    const refreshToken = signRefreshToken({ userId: user.id, email: user.email, role: user.role, type: 'refresh' });
 
-    return {
-      user: toUserResponseDto(user),
-      accessToken,
-      refreshToken,
-    };
+    // Persist refresh token in DB
+    await storeRefreshToken(user.id, refreshToken);
+
+    return { user: toUserResponseDto(user), accessToken, refreshToken };
   }
 
   async refreshAccessToken(token: string): Promise<{ accessToken: string; refreshToken: string; user: UserResponseDto }> {
-    try {
-      const decoded = jwt.verify(
-        token,
-        env.JWT_REFRESH_SECRET
-      ) as { userId: string; email: string; role: UserRole };
+    if (!token) {
+      throw new AppError('Refresh token is required', 400, ErrorCode.BAD_REQUEST);
+    }
 
-      const user = await authRepository.findById(decoded.userId);
-      if (!user) {
-        throw new AppError('User not found', 404, ErrorCode.NOT_FOUND);
-      }
-
-      const newAccessToken = this.generateAccessToken(user.id, user.email, user.role);
-      const newRefreshToken = this.generateRefreshToken(user.id, user.email, user.role);
-
-      return {
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
-        user: toUserResponseDto(user),
-      };
-    } catch {
+    // 1. Verify JWT signature
+    const decoded = verifyRefreshToken<{ userId: string; email: string; role: UserRole }>(token);
+    if (!decoded?.userId) {
       throw new AppError('Invalid or expired refresh token', 401, ErrorCode.UNAUTHORIZED);
     }
+
+    // 2. Check DB – token must exist and not be expired
+    const storedToken = await findRefreshToken(token);
+    if (!storedToken || new Date() > new Date(storedToken.expiresAt)) {
+      if (storedToken) await deleteRefreshToken(token);
+      throw new AppError('Invalid or expired refresh token', 401, ErrorCode.UNAUTHORIZED);
+    }
+
+    const user = await authRepository.findById(decoded.userId);
+    if (!user) throw new AppError('User not found', 404, ErrorCode.NOT_FOUND);
+
+    // 3. Rotate: revoke old Redis access token, delete old DB refresh token
+    await revokeAccessToken(user.id);
+    await deleteRefreshToken(token);
+
+    // 4. Issue new pair
+    const newAccessToken = await signAndStoreAccessToken(
+      { userId: user.id, email: user.email, role: user.role, type: 'access' },
+      user.id
+    );
+    const newRefreshToken = signRefreshToken({ userId: user.id, email: user.email, role: user.role, type: 'refresh' });
+    await storeRefreshToken(user.id, newRefreshToken);
+
+    return { accessToken: newAccessToken, refreshToken: newRefreshToken, user: toUserResponseDto(user) };
+  }
+
+  async logout(userId?: string, refreshToken?: string): Promise<void> {
+    if (userId) await revokeAccessToken(userId);        // Evict from Redis immediately
+    if (refreshToken) await deleteRefreshToken(refreshToken); // Revoke DB refresh token
   }
 
   async requestPasswordReset(email: string): Promise<void> {
@@ -103,9 +133,8 @@ export class AuthService {
 
     const resetToken = crypto.randomBytes(32).toString('hex');
     const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    const ttlSeconds = 15 * 60; // 15 mins (900 seconds)
+    const ttlSeconds = 15 * 60;
 
-    // Store in Redis according to email
     const resetData = JSON.stringify({ userId: user.id, email: normalizedEmail, token: hashedToken });
     await redis.set(`reset_token:${normalizedEmail}`, resetData, 'EX', ttlSeconds);
     await redis.set(`reset_token_lookup:${hashedToken}`, normalizedEmail, 'EX', ttlSeconds);
@@ -121,52 +150,25 @@ export class AuthService {
   async resetPassword(token: string, newPassword: string): Promise<void> {
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
     const email = await redis.get(`reset_token_lookup:${hashedToken}`);
-
-    if (!email) {
-      throw new AppError('Invalid or expired reset token', 400, ErrorCode.BAD_REQUEST);
-    }
+    if (!email) throw new AppError('Invalid or expired reset token', 400, ErrorCode.BAD_REQUEST);
 
     const resetDataStr = await redis.get(`reset_token:${email}`);
-    if (!resetDataStr) {
-      throw new AppError('Invalid or expired reset token', 400, ErrorCode.BAD_REQUEST);
-    }
+    if (!resetDataStr) throw new AppError('Invalid or expired reset token', 400, ErrorCode.BAD_REQUEST);
 
     const { userId, token: storedToken } = JSON.parse(resetDataStr);
-
-    if (storedToken !== hashedToken) {
-      throw new AppError('Invalid or expired reset token', 400, ErrorCode.BAD_REQUEST);
-    }
+    if (storedToken !== hashedToken) throw new AppError('Invalid or expired reset token', 400, ErrorCode.BAD_REQUEST);
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await authRepository.updatePassword(userId, hashedPassword);
 
-    // Delete token from Redis
     await redis.del(`reset_token_lookup:${hashedToken}`);
     await redis.del(`reset_token:${email}`);
   }
 
   async getProfile(userId: string): Promise<UserResponseDto> {
     const user = await authRepository.findById(userId);
-    if (!user) {
-      throw new AppError('User not found', 404, ErrorCode.NOT_FOUND);
-    }
+    if (!user) throw new AppError('User not found', 404, ErrorCode.NOT_FOUND);
     return toUserResponseDto(user);
-  }
-
-  private generateAccessToken(userId: string, email: string, role: UserRole): string {
-    return jwt.sign(
-      { userId, email, role, type: 'access' },
-      env.JWT_ACCESS_SECRET,
-      { expiresIn: '1d' }
-    );
-  }
-
-  private generateRefreshToken(userId: string, email: string, role: UserRole): string {
-    return jwt.sign(
-      { userId, email, role, type: 'refresh' },
-      env.JWT_REFRESH_SECRET,
-      { expiresIn: '7d' }
-    );
   }
 }
 

@@ -19,8 +19,8 @@ export class SuperAdminBookingsRepository {
       where.OR = [
         { user: { fullName: { contains: search, mode: 'insensitive' } } },
         { user: { email: { contains: search, mode: 'insensitive' } } },
+        { user: { phoneNumber: { contains: search, mode: 'insensitive' } } },
         { court: { name: { contains: search, mode: 'insensitive' } } },
-        { otp: { contains: search, mode: 'insensitive' } },
       ];
     }
     if (date) {
@@ -36,7 +36,7 @@ export class SuperAdminBookingsRepository {
       include: {
         user: { select: { id: true, fullName: true, email: true, phoneNumber: true } },
         court: { include: { venue: { select: { id: true, name: true, address: true } } } },
-        payment: true,
+        payments: true,
       },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: limit + 1,
@@ -45,7 +45,7 @@ export class SuperAdminBookingsRepository {
   }
 
   async findById(id: string) {
-    return prisma.booking.findUnique({ where: { id }, include: { payment: true } });
+    return prisma.booking.findUnique({ where: { id }, include: { payments: true } });
   }
 
   async update(id: string, data: Record<string, unknown>) {
@@ -55,7 +55,7 @@ export class SuperAdminBookingsRepository {
       include: {
         user: true,
         court: { include: { venue: true } },
-        payment: true,
+        payments: true,
       },
     });
   }

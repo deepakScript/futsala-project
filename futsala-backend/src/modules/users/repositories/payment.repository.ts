@@ -16,10 +16,13 @@ export class PaymentRepository {
     bookingId: string,
     amount: number,
     transactionId: string,
-    paymentMethod: string
+    paymentMethod: string,
+    tenantId?: string,
+    userId?: string,
+    idempotencyKey?: string
   ) {
     return prisma.payment.upsert({
-      where: { bookingId },
+      where: { transactionId },
       update: {
         amount,
         transactionId,
@@ -27,9 +30,12 @@ export class PaymentRepository {
       },
       create: {
         bookingId,
+        tenantId: tenantId || '',
+        userId: userId || '',
         amount,
         paymentMethod,
         transactionId,
+        idempotencyKey: idempotencyKey || transactionId,
         status: PaymentStatus.PENDING,
       },
     });
@@ -60,7 +66,6 @@ export class PaymentRepository {
       await tx.booking.update({
         where: { id: bookingId },
         data: {
-          paymentStatus: PaymentStatus.PAID,
           status: 'CONFIRMED',
         },
       });

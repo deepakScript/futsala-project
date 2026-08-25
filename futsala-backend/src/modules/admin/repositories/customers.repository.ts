@@ -70,7 +70,7 @@ export class AdminCustomerRepository {
       };
 
       existing.totalBookings += 1;
-      existing.totalSpent += b.totalPrice || 0;
+      existing.totalSpent += Number(b.totalPrice || 0);
       if (b.bookingDate && (!existing.lastBookingDate || new Date(b.bookingDate) > new Date(existing.lastBookingDate))) {
         existing.lastBookingDate = b.bookingDate.toISOString();
       }

@@ -79,7 +79,8 @@ export class SuperAdminOwnersService {
       let bookingsCount = 0;
       venue.courts.forEach((court) => {
         court.bookings.forEach((booking) => {
-          if (booking.paymentStatus === 'PAID') revenue += booking.totalPrice;
+          const isPaid = booking.payments?.some((p) => p.status === 'PAID');
+          if (isPaid) revenue += Number(booking.totalPrice);
           bookingsCount++;
         });
       });

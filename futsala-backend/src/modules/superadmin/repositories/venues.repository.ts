@@ -24,7 +24,7 @@ export class SuperAdminVenuesRepository {
           : {}),
       },
       include: {
-        tenant: { select: { id: true, name: true, email: true } },
+        tenant: { select: { id: true, name: true } },
         _count: { select: { courts: true, bookings: true } },
       },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -78,11 +78,9 @@ export class SuperAdminVenuesRepository {
     return prisma.venue.create({
       data: {
         name: data.name,
-        description: data.description || '',
         address: data.address,
         city: data.city,
         phoneNumber: data.phoneNumber || '',
-        amenities: data.amenities || [],
         images: data.images || [],
         tenantId,
         isActive: true,
@@ -107,13 +105,20 @@ export class SuperAdminVenuesRepository {
       });
     }
 
+    const venue = await prisma.venue.findUnique({
+      where: { id: courtData.venueId },
+      select: { tenantId: true },
+    });
+    if (!venue) {
+      throw new Error('Venue not found');
+    }
+
     return prisma.court.create({
       data: {
         name: courtData.name,
         pricePerHour: courtData.pricePerHour,
-        courtType: 'Standard',
-        surfaceType: 'Turf',
         venueId: courtData.venueId,
+        tenantId: venue.tenantId,
       },
     });
   }
@@ -128,6 +133,7 @@ export class SuperAdminVenuesRepository {
       include: {
         user: { select: { fullName: true, email: true } },
         court: { select: { name: true } },
+        payments: true,
       },
       orderBy: { bookingDate: 'desc' },
     });

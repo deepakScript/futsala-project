@@ -62,7 +62,7 @@ export class BookingService {
         endTime: b.endTime,
       }));
 
-      const slots = this.generateTimeSlots(court.openTime, court.closeTime, court.slotDuration);
+      const slots = this.generateTimeSlots();
 
       slots.forEach((slot) => {
         // Check if slot overlaps with any booking
@@ -73,7 +73,6 @@ export class BookingService {
         flattenedAvailability.push({
           courtId: court.id,
           courtName: court.name,
-          courtType: court.courtType,
           startTime: slot.startTime,
           endTime: slot.endTime,
           price: court.pricePerHour,
@@ -111,7 +110,7 @@ export class BookingService {
       throw new AppError('Invalid time range', 400);
     }
 
-    const totalPrice = totalHours * court.pricePerHour;
+    const totalPrice = totalHours * Number(court.pricePerHour);
     const otp = crypto.randomInt(100000, 999999).toString();
 
     // Check conflicts
@@ -127,15 +126,14 @@ export class BookingService {
 
     // Create the booking
     const booking = await this.bookingRepo.create({
+      tenant: { connect: { id: court.tenantId } },
+      venue: { connect: { id: court.venueId } },
       user: { connect: { id: userId } },
       court: { connect: { id: courtId } },
       bookingDate: bookingDateObj,
       startTime,
       endTime,
-      totalHours,
       totalPrice,
-      notes,
-      otp,
       status: BookingStatus.PENDING,
     });
 
@@ -174,10 +172,6 @@ export class BookingService {
       throw new AppError('Booking is already cancelled', 400);
     }
 
-    if (booking.status === BookingStatus.COMPLETED) {
-      throw new AppError('Cannot cancel completed booking', 400);
-    }
-
     const updatedBooking = await this.bookingRepo.update(bookingId, {
       status: BookingStatus.CANCELLED,
     });
@@ -197,8 +191,8 @@ export class BookingService {
       throw new AppError('You can only reschedule your own bookings', 403);
     }
 
-    if (booking.status === BookingStatus.CANCELLED || booking.status === BookingStatus.COMPLETED) {
-      throw new AppError('Cannot reschedule cancelled or completed booking', 400);
+    if (booking.status === BookingStatus.CANCELLED || booking.status === BookingStatus.CONFIRMED) {
+      throw new AppError('Cannot reschedule cancelled or confirmed booking', 400);
     }
 
     const updateData: any = {};
@@ -228,7 +222,7 @@ export class BookingService {
         throw new AppError('Invalid time range', 400);
       }
       updateData.totalHours = totalHours;
-      updateData.totalPrice = totalHours * (booking as any).court.pricePerHour;
+      updateData.totalPrice = totalHours * Number((booking as any).court.pricePerHour);
     }
 
     const conflict = await this.bookingRepo.findConflicting(

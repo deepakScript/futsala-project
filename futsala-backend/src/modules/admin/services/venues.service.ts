@@ -38,6 +38,7 @@ export class AdminVenueService {
           name: court.name,
           pricePerHour: parseFloat(court.pricePerHour.toString()),
           venueId: id,
+          tenantId: updatedVenue.tenantId,
         });
       }
     }

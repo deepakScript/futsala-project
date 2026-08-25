@@ -41,17 +41,17 @@ export const getReports = async (_req: Request, res: Response) => {
 
         const revenue = await prisma.booking.aggregate({
           where: {
-            paymentStatus: 'PAID',
-            updatedAt: { gte: startDate, lte: endDate },
+            payments: { some: { status: 'PAID' } },
+            createdAt: { gte: startDate, lte: endDate },
           },
           _sum: { totalPrice: true },
-          _count: { _all: true },
+          _count: { id: true },
         });
 
         return {
           month: format(month, 'MMM'),
-          revenue: revenue._sum.totalPrice || 0,
-          bookings: revenue._count._all || 0,
+          revenue: revenue._sum?.totalPrice ? Number(revenue._sum.totalPrice) : 0,
+          bookings: revenue._count?.id || 0,
         };
       })
     );
@@ -61,7 +61,7 @@ export const getReports = async (_req: Request, res: Response) => {
         courts: {
           include: {
             bookings: {
-              where: { paymentStatus: 'PAID' },
+              where: { payments: { some: { status: 'PAID' } } },
               select: { totalPrice: true },
             },
             _count: { select: { bookings: true } },
@@ -72,9 +72,9 @@ export const getReports = async (_req: Request, res: Response) => {
 
     const venuePerformance = venues
       .map((venue) => {
-        const totalBookings = venue.courts.reduce((acc, court) => acc + court._count.bookings, 0);
+        const totalBookings = venue.courts.reduce((acc, court) => acc + (court._count?.bookings || 0), 0);
         const revenue = venue.courts.reduce((acc, court) => {
-          return acc + court.bookings.reduce((sum, booking) => sum + booking.totalPrice, 0);
+          return acc + court.bookings.reduce((sum, booking) => sum + Number(booking.totalPrice), 0);
         }, 0);
 
         return { name: venue.name, totalBookings, revenue };
@@ -95,10 +95,10 @@ export const getReports = async (_req: Request, res: Response) => {
     });
     const totalVenues = await prisma.venue.count();
     const totalRevenueResult = await prisma.booking.aggregate({
-      where: { paymentStatus: 'PAID' },
+      where: { payments: { some: { status: 'PAID' } } },
       _sum: { totalPrice: true },
     });
-    const totalRevenue = totalRevenueResult._sum.totalPrice || 0;
+    const totalRevenue = totalRevenueResult._sum?.totalPrice ? Number(totalRevenueResult._sum.totalPrice) : 0;
 
     return res.json({
       growthData,

@@ -8,7 +8,7 @@ export class SuperAdminDashboardService {
       .map((venue) => {
         const bookingsCount = venue.courts.reduce((acc, court) => acc + (court._count?.bookings || 0), 0);
         const revenue = venue.courts.reduce((acc, court) => {
-          return acc + court.bookings.reduce((sum, b) => sum + b.totalPrice, 0);
+          return acc + court.bookings.reduce((sum, b) => sum + Number(b.totalPrice), 0);
         }, 0);
         return {
           id: venue.id,

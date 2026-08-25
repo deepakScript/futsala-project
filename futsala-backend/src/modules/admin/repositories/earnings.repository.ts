@@ -7,7 +7,7 @@ export class AdminEarningsRepository {
       include: {
         user: { select: { fullName: true, email: true } },
         court: { select: { name: true, venue: { select: { name: true } } } },
-        payment: true,
+        payments: true,
       },
       orderBy: { createdAt: 'desc' },
     });

@@ -1,13 +1,26 @@
 import { Request, Response, NextFunction } from 'express';
-import { SuperAdminTokenPayload, verifyToken } from '../../../utils/jwt';
+import { SuperAdminTokenPayload, validateAccessToken } from '../../../utils/jwt';
 
-export const requireSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
-  const token = req.cookies?.['auth-token'] || req.cookies?.token || (req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.split(' ')[1] : undefined);
+const extractToken = (req: Request): string | undefined =>
+  req.cookies?.['auth-token'] ||
+  req.cookies?.token ||
+  req.cookies?.accessToken ||
+  (req.headers.authorization?.startsWith('Bearer ')
+    ? req.headers.authorization.split(' ')[1]
+    : undefined);
+
+/**
+ * Validates the 15-min access token:
+ *  1. Verifies JWT signature + expiry.
+ *  2. Confirms the token is whitelisted in Redis (access_token:{userId}).
+ */
+export const requireSuperAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  const token = extractToken(req);
   if (!token) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const decoded = verifyToken<SuperAdminTokenPayload>(token);
+  const decoded = await validateAccessToken<SuperAdminTokenPayload>(token);
   if (!decoded || (decoded.role !== 'TENANT_ADMIN' && decoded.role !== 'SUPERADMIN')) {
     return res.status(401).json({ error: 'Unauthorized' });
   }

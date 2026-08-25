@@ -26,7 +26,7 @@ export class PaymentService {
       return_url:
         returnUrl || `${env.FRONTEND_URL}/payment/success`,
       website_url: env.FRONTEND_URL,
-      amount: Math.round(booking.totalPrice * 100),
+      amount: Math.round(booking.totalPrice.toNumber() * 100),
       purchase_order_id: purchaseOrderId,
       purchase_order_name: `Booking for ${booking.court.venue.name} - ${booking.court.name}`,
       customer_info: {
@@ -57,9 +57,11 @@ export class PaymentService {
 
     const payment = await paymentRepository.upsertPayment(
       bookingId,
-      booking.totalPrice,
+      booking.totalPrice.toNumber(),
       khaltiData.pidx,
-      PAYMENT_METHOD
+      PAYMENT_METHOD,
+      booking.tenantId,
+      userId
     );
 
     return {
@@ -115,7 +117,7 @@ export class PaymentService {
       payment.id,
       payment.bookingId,
       userId,
-      payment.amount,
+      payment.amount.toNumber(),
       pidx
     );
 
@@ -130,7 +132,7 @@ export class PaymentService {
     const payments = await paymentRepository.findUserPaymentHistory(userId);
     const totalAmount = payments
       .filter((p) => p.status === 'PAID')
-      .reduce((sum, p) => sum + p.amount, 0);
+      .reduce((sum, p) => sum + p.amount.toNumber(), 0);
 
     return {
       count: payments.length,

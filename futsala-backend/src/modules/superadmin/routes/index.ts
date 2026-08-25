@@ -14,6 +14,8 @@ const router = Router();
 
 router.post('/auth/login', auth.login);
 router.post('/auth/logout', auth.logout);
+router.post('/auth/refresh', auth.refresh);
+router.post('/auth/refresh-token', auth.refresh);
 
 router.use(requireSuperAdmin);
 

@@ -25,7 +25,7 @@ export class SuperAdminPaymentsService {
       let grossRevenue = 0;
       venue.courts.forEach((court) => {
         court.bookings.forEach((booking) => {
-          grossRevenue += booking.totalPrice;
+          grossRevenue += Number(booking.totalPrice);
         });
       });
       const commission = grossRevenue * COMMISSION_RATE;
@@ -34,7 +34,7 @@ export class SuperAdminPaymentsService {
         venueId: venue.id,
         venueName: venue.name,
         ownerName: owner?.fullName || venue.tenant?.name || 'Unknown',
-        ownerEmail: owner?.email || venue.tenant?.email || 'N/A',
+        ownerEmail: owner?.email || 'N/A',
         grossRevenue,
         commission,
         netPayout: grossRevenue - commission,

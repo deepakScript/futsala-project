@@ -28,8 +28,8 @@ export class SuperAdminPaymentsRepository {
       prisma.payment.aggregate({ _sum: { amount: true }, where: { status: 'REFUNDED' } }),
     ]);
     return {
-      totalPaid: totalPaid._sum.amount || 0,
-      totalRefunded: totalRefunded._sum.amount || 0,
+      totalPaid: totalPaid._sum.amount ? Number(totalPaid._sum.amount) : 0,
+      totalRefunded: totalRefunded._sum.amount ? Number(totalRefunded._sum.amount) : 0,
     };
   }
 
@@ -39,8 +39,8 @@ export class SuperAdminPaymentsRepository {
         courts: {
           include: {
             bookings: {
-              where: { paymentStatus: 'PAID', status: 'COMPLETED' },
-              include: { payment: true },
+              where: { status: 'COMPLETED', payments: { some: { status: 'PAID' } } },
+              include: { payments: true },
             },
           },
         },

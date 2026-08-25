@@ -16,6 +16,8 @@ const uploadMiddleware = multer({ storage: multer.memoryStorage() });
 
 router.post('/auth/login', auth.login);
 router.post('/auth/logout', auth.logout);
+router.post('/auth/refresh', auth.refresh);
+router.post('/auth/refresh-token', auth.refresh);
 
 router.get('/bookings', requireVenueOwner, bookings.getBookings);
 router.patch('/bookings', requireVenueOwner, bookings.patchBooking);

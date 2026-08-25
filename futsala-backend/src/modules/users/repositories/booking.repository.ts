@@ -9,7 +9,7 @@ export class BookingRepository {
         court: {
           include: { venue: true },
         },
-        payment: true,
+        payments: true,
       },
     });
   }
@@ -75,7 +75,7 @@ export class BookingRepository {
             },
           },
         },
-        payment: true,
+        payments: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -100,7 +100,7 @@ export class BookingRepository {
             phoneNumber: true,
           },
         },
-        payment: true,
+        payments: true,
       },
     });
   }

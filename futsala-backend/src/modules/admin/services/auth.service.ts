@@ -2,7 +2,18 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { adminAuthRepository } from '../repositories/auth.repository';
 import { AppError, ErrorCode } from '../../../utils/customError';
-import { signAdminToken, cookieOptions } from '../../../utils/jwt';
+import {
+  signAndStoreAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+  storeRefreshToken,
+  findRefreshToken,
+  deleteRefreshToken,
+  revokeAccessToken,
+  accessTokenCookieOptions,
+  refreshTokenCookieOptions,
+  cookieOptions,
+} from '../../../utils/jwt';
 import { emailQueue } from '../../../utils/email/email.queue';
 import env from '../../../config/env.config';
 
@@ -30,13 +41,73 @@ export class AdminAuthService {
       throw new AppError('Invalid credentials', 401, ErrorCode.INVALID_CREDENTIALS);
     }
 
-    const token = signAdminToken({ id: user.id, email: user.email, role: user.role });
+    // Sign access token & store in Redis whitelist (15 min TTL)
+    const accessToken = await signAndStoreAccessToken(
+      { id: user.id, email: user.email, role: user.role },
+      user.id
+    );
+    const refreshToken = signRefreshToken({ userId: user.id, email: user.email, role: user.role });
+
+    await storeRefreshToken(user.id, refreshToken);
 
     return {
-      token,
+      token: accessToken,
+      accessToken,
+      refreshToken,
       cookieOptions,
-      user: { id: user.id, name: user.fullName, email: user.email },
+      accessTokenCookieOptions,
+      refreshTokenCookieOptions,
+      user: { id: user.id, name: user.fullName, email: user.email, role: user.role },
     };
+  }
+
+  async refreshAccessToken(token: string) {
+    if (!token) {
+      throw new AppError('Refresh token is required', 400, ErrorCode.BAD_REQUEST);
+    }
+
+    const decoded = verifyRefreshToken<{ userId: string; id?: string; email: string; role: string }>(token);
+    const userId = decoded?.userId || decoded?.id;
+    if (!decoded || !userId) {
+      throw new AppError('Invalid or expired refresh token', 401, ErrorCode.UNAUTHORIZED);
+    }
+
+    const storedToken = await findRefreshToken(token);
+    if (!storedToken || new Date() > new Date(storedToken.expiresAt)) {
+      if (storedToken) {
+        await deleteRefreshToken(token);
+      }
+      throw new AppError('Invalid or expired refresh token', 401, ErrorCode.UNAUTHORIZED);
+    }
+
+    const user = await adminAuthRepository.findById(userId);
+    if (!user || user.role !== 'TENANT_ADMIN') {
+      throw new AppError('User not found or insufficient privileges', 403, ErrorCode.FORBIDDEN);
+    }
+
+    // Rotate: revoke old Redis access token, delete old DB refresh token
+    await revokeAccessToken(user.id);
+    await deleteRefreshToken(token);
+
+    const newAccessToken = await signAndStoreAccessToken(
+      { id: user.id, email: user.email, role: user.role },
+      user.id
+    );
+    const newRefreshToken = signRefreshToken({ userId: user.id, email: user.email, role: user.role });
+
+    await storeRefreshToken(user.id, newRefreshToken);
+
+    return {
+      token: newAccessToken,
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      user: { id: user.id, name: user.fullName, email: user.email, role: user.role },
+    };
+  }
+
+  async logout(userId?: string, refreshToken?: string): Promise<void> {
+    if (userId) await revokeAccessToken(userId);          // Evict from Redis immediately
+    if (refreshToken) await deleteRefreshToken(refreshToken); // Revoke DB refresh token
   }
 
   async requestPasswordReset(email: string): Promise<void> {

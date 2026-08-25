@@ -31,8 +31,10 @@ export class SuperAdminBookingsService {
 
     const updatedBooking = await superAdminBookingsRepository.update(id, updateData);
 
-    if (data.paymentStatus && booking.payment) {
-      await superAdminBookingsRepository.updatePaymentStatus(booking.payment.id, data.paymentStatus as any);
+    if (data.paymentStatus && booking.payments && booking.payments.length > 0) {
+      for (const payment of booking.payments) {
+        await superAdminBookingsRepository.updatePaymentStatus(payment.id, data.paymentStatus as any);
+      }
     }
 
     return updatedBooking;

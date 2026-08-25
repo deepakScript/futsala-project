@@ -8,7 +8,7 @@ export class AdminDashboardService {
     const allCourts = venues.flatMap((v) => v.courts);
     const allPaidBookings = allCourts.flatMap((c) => c.bookings);
 
-    const totalRevenue = allPaidBookings.reduce((sum, b) => sum + b.totalPrice, 0);
+    const totalRevenue = allPaidBookings.reduce((sum, b) => sum + Number(b.totalPrice), 0);
     const totalBookings = allPaidBookings.length;
     const avgRating =
       venues.length > 0 ? venues.reduce((sum, v) => sum + ((v as any).rating || 0), 0) / venues.length : 0;
@@ -19,13 +19,13 @@ export class AdminDashboardService {
     const revenueTrendRaw = await adminDashboardRepository.getRevenueTrend(ownerId, sevenDaysAgo);
     const revenueTrend = revenueTrendRaw.map((item) => ({
       date: item.bookingDate.toISOString().split('T')[0],
-      amount: item._sum.totalPrice || 0,
+      amount: Number(item._sum.totalPrice || 0),
     }));
 
     const courtDistribution = allCourts
       .map((court) => ({
         name: court.name,
-        value: court.bookings.reduce((sum, b) => sum + b.totalPrice, 0),
+        value: court.bookings.reduce((sum, b) => sum + Number(b.totalPrice), 0),
       }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 5);
@@ -48,7 +48,7 @@ export class AdminDashboardService {
         court: `${b.court.venue.name} - ${b.court.name}`,
         date: b.bookingDate.toISOString().split('T')[0],
         time: `${b.startTime} - ${b.endTime}`,
-        amount: b.totalPrice,
+        amount: Number(b.totalPrice),
         status: b.status,
       })),
     };

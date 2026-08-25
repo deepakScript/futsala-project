@@ -7,7 +7,7 @@ export class AdminDashboardRepository {
       include: {
         courts: {
           include: {
-            bookings: { where: { paymentStatus: 'PAID' } },
+            bookings: { where: { payments: { some: { status: 'PAID' } } } },
           },
         },
       },
@@ -19,7 +19,7 @@ export class AdminDashboardRepository {
       by: ['bookingDate'],
       where: {
         court: { venue: { tenant: { users: { some: { id: ownerId } } } } },
-        paymentStatus: 'PAID',
+        payments: { some: { status: 'PAID' } },
         bookingDate: { gte: daysAgo },
       },
       _sum: { totalPrice: true },

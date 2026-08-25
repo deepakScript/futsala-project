@@ -1,4 +1,4 @@
-// Prisma Schema for Minimal Multi-Tenant Futsal Booking SaaS App
+// Multi-Tenant Futsal Marketplace Schema (Idempotent Architecture)
 // Database: PostgreSQL
 
 generator client {
@@ -35,153 +35,161 @@ enum PaymentStatus {
 }
 
 // --------------------------------------
-// 1. Tenant Model (Organization / Futsal Chain)
+// 1. Tenant & User Models
 // --------------------------------------
 
 model Tenant {
-  id          String   @id @default(uuid())
-  name        String
-  slug        String   @unique
-  email       String?
-  phoneNumber String?
-  address     String?
-  city        String?
-  logo        String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
 
   // Relations
-  users       User[]
-  venues      Venue[]
+  users    User[]
+  venues   Venue[]
+  bookings Booking[]
+  payments Payment[]
+  courts   Court[]
 
   @@map("tenants")
 }
 
-// --------------------------------------
-// 2. User Model
-// --------------------------------------
-
 model User {
-  id          String    @id @default(uuid())
-  email       String    @unique
+  id          String   @id @default(uuid())
+  email       String   @unique
   password    String
   fullName    String
   phoneNumber String
-  role        UserRole  @default(CUSTOMER)
-  isVerified  Boolean   @default(false)
-  tenantId    String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  isVerified  Boolean  @default(false)
+  role        UserRole @default(CUSTOMER)
+  tenantId    String? // ONLY populated if role is TENANT_ADMIN
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
-  tenant      Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  bookings    Booking[]
+  tenant        Tenant?        @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  bookings      Booking[]
+  payments      Payment[]
+  refreshTokens RefreshToken[]
 
   @@index([tenantId])
   @@map("users")
 }
 
 // --------------------------------------
-// 3. Venue & Court Models
+// 2. Futsal Venue & Court Models
 // --------------------------------------
 
 model Venue {
-  id          String    @id @default(uuid())
+  id          String   @id @default(uuid())
   tenantId    String
   name        String
-  description String?
   address     String
   city        String
-  latitude    Float?
-  longitude   Float?
   phoneNumber String
-  email       String?
-  images      String[]  @default([])
-  amenities   String[]  @default([])
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  images      String[] @default([])
+  isVerified  Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
 
   // Relations
-  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  courts      Court[]
-  bookings    Booking[]
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  courts   Court[]
+  bookings Booking[]
 
   @@index([tenantId])
   @@map("venues")
 }
 
 model Court {
-  id           String    @id @default(uuid())
+  id           String  @id @default(uuid())
+  tenantId     String
   venueId      String
-  name         String    // e.g., "Court A", "Court 1"
-  courtType    String?   // e.g., "5-a-side", "7-a-side"
-  surfaceType  String?   // e.g., "Artificial Grass", "Natural Grass", "Hard"
-  pricePerHour Float
-  openTime     String    @default("06:00") // "HH:mm"
-  closeTime    String    @default("23:00") // "HH:mm"
-  slotDuration Int       @default(60)     // Slot duration in minutes
-  isIndoor     Boolean   @default(false)
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  name         String
+  pricePerHour Decimal @db.Decimal(10, 2)
+  isActive     Boolean @default(true)
 
   // Relations
-  venue        Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  bookings     Booking[]
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  venue    Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  bookings Booking[]
 
-  @@index([venueId])
+  @@index([tenantId])
   @@map("courts")
 }
 
 // --------------------------------------
-// 4. Booking & Payment Models
+// 3. Booking & Payment Models (With DB-Level Idempotency)
 // --------------------------------------
 
 model Booking {
-  id             String        @id @default(uuid())
-  userId         String
-  venueId        String?
-  courtId        String
-  bookingDate    DateTime
-  startTime      String        // "08:00"
-  endTime        String        // "09:00"
-  totalHours     Float
-  totalPrice     Float
-  status         BookingStatus @default(PENDING)
-  paymentStatus  PaymentStatus @default(PENDING)
-  notes          String?
-  otp            String?
-  idempotencyKey String?       @unique
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id          String        @id @default(uuid())
+  tenantId    String
+  userId      String
+  venueId     String
+  courtId     String
+  bookingDate DateTime      @db.Date
+  startTime   String // "07:00"
+  endTime     String // "08:00"
+  totalPrice  Decimal       @db.Decimal(10, 2)
+  status      BookingStatus @default(PENDING)
+
+  // Client-generated UUID to intercept duplicate API booking submissions
+  idempotencyKey String?  @unique
+  createdAt      DateTime @default(now())
 
   // Relations
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  venue          Venue?        @relation(fields: [venueId], references: [id], onDelete: SetNull)
-  court          Court         @relation(fields: [courtId], references: [id], onDelete: Cascade)
-  payment        Payment?
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venue    Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  court    Court     @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  payments Payment[]
 
-  @@index([userId])
-  @@index([venueId])
-  @@index([courtId])
+  // Hard physical block: Protects against double-booking the same hour slot
+  @@unique([courtId, bookingDate, startTime])
+  @@index([tenantId, bookingDate])
   @@map("bookings")
 }
 
 model Payment {
   id            String        @id @default(uuid())
-  bookingId     String        @unique
-  amount        Float
-  paymentMethod String        // "KHALTI", "eSewa", "Cash", "Card"
-  transactionId String?       // Khalti pidx or external transaction ref
+  tenantId      String
+  bookingId     String
+  userId        String
+  amount        Decimal       @db.Decimal(10, 2)
+  paymentMethod String // "KHALTI", "ESEWA", "CASH"
   status        PaymentStatus @default(PENDING)
   paidAt        DateTime?
   createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+
+  // Crucial fields for gateway synchronization and retry mapping
+  transactionId  String? @unique // Unique reference tracking code sent by eSewa/Khalti
+  idempotencyKey String  @unique // Unique UUID generated by client frontend before payment execution
 
   // Relations
-  booking       Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([bookingId])
+  @@index([tenantId])
   @@map("payments")
+}
+
+// --------------------------------------
+// 4. Authentication & Refresh Token Model
+// --------------------------------------
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }

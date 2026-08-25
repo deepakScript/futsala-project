@@ -66,8 +66,8 @@ export class SuperAdminVenuesService {
   async getVenueStats(venueId: string) {
     const bookings = await superAdminVenuesRepository.getBookingsForVenue(venueId);
     const totalRevenue = bookings
-      .filter((b) => b.paymentStatus === 'PAID')
-      .reduce((sum, b) => sum + b.totalPrice, 0);
+      .filter((b) => b.payments?.some((p) => p.status === 'PAID'))
+      .reduce((sum, b) => sum + Number(b.totalPrice), 0);
     const commission = totalRevenue * 0.02;
 
     return {

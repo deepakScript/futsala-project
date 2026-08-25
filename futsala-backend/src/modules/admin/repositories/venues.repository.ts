@@ -31,6 +31,7 @@ export class AdminVenueRepository {
     name: string;
     pricePerHour: number;
     venueId: string;
+    tenantId?: string;
   }) {
     if (courtData.id) {
       return prisma.court.update({
@@ -42,11 +43,24 @@ export class AdminVenueRepository {
       });
     }
 
+    let tenantId = courtData.tenantId;
+    if (!tenantId) {
+      const venue = await prisma.venue.findUnique({
+        where: { id: courtData.venueId },
+        select: { tenantId: true },
+      });
+      if (!venue) {
+        throw new Error('Venue not found');
+      }
+      tenantId = venue.tenantId;
+    }
+
     return prisma.court.create({
       data: {
         name: courtData.name,
         pricePerHour: courtData.pricePerHour,
         venueId: courtData.venueId,
+        tenantId,
       },
     });
   }
@@ -83,8 +97,8 @@ export class AdminBookingRepository {
       where.OR = [
         { user: { fullName: { contains: search, mode: 'insensitive' } } },
         { user: { email: { contains: search, mode: 'insensitive' } } },
+        { user: { phoneNumber: { contains: search, mode: 'insensitive' } } },
         { court: { name: { contains: search, mode: 'insensitive' } } },
-        { otp: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -114,13 +128,13 @@ export class AdminBookingRepository {
       where: { court: { venue: venueFilter }, status: 'PENDING' },
     });
     const totalRevenueAgg = await prisma.booking.aggregate({
-      where: { court: { venue: venueFilter }, paymentStatus: 'PAID' },
+      where: { court: { venue: venueFilter }, payments: { some: { status: 'PAID' } } },
       _sum: { totalPrice: true },
     });
     return {
       totalToday,
       pendingApprovals,
-      revenue: totalRevenueAgg._sum.totalPrice || 0,
+      revenue: totalRevenueAgg._sum?.totalPrice || 0,
     };
   }
 

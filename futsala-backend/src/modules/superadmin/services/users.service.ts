@@ -27,17 +27,21 @@ export class SuperAdminUsersService {
 
   async getUserBookings(id: string) {
     const bookings = await superAdminUsersRepository.getBookings(id);
-    return bookings.map((booking) => ({
-      id: booking.id,
-      venueName: booking.court.venue.name,
-      courtName: booking.court.name,
-      bookingDate: booking.bookingDate,
-      startTime: booking.startTime,
-      endTime: booking.endTime,
-      totalPrice: booking.totalPrice,
-      status: booking.status,
-      paymentStatus: booking.paymentStatus,
-    }));
+    return bookings.map((booking) => {
+      const paidPayment = booking.payments?.find((p) => p.status === 'PAID');
+      const paymentStatus = paidPayment ? paidPayment.status : (booking.payments?.[0]?.status || 'PENDING');
+      return {
+        id: booking.id,
+        venueName: booking.court.venue.name,
+        courtName: booking.court.name,
+        bookingDate: booking.bookingDate,
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        totalPrice: booking.totalPrice,
+        status: booking.status,
+        paymentStatus,
+      };
+    });
   }
 }
 

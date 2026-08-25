@@ -29,13 +29,9 @@ export class AdminTimeSlotsRepository {
     });
   }
 
-  async updateCourtHours(courtId: string, openTime: string, closeTime: string) {
-    return prisma.court.update({
+  async updateCourtHours(courtId: string, _openTime: string, _closeTime: string) {
+    return prisma.court.findUnique({
       where: { id: courtId },
-      data: {
-        openTime,
-        closeTime,
-      },
     });
   }
 }

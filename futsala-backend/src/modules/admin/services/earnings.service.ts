@@ -14,45 +14,49 @@ export class AdminEarningsService {
     startOfWeekDate.setDate(now.getDate() - now.getDay());
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const paidBookings = bookings.filter((b) => b.paymentStatus === 'PAID');
+    const paidBookings = bookings.filter((b) => b.payments.some((p) => p.status === 'PAID'));
 
-    const totalEarnings = paidBookings.reduce((sum, b) => sum + b.totalPrice, 0);
+    const totalEarnings = paidBookings.reduce((sum, b) => sum + Number(b.totalPrice), 0);
     const dailyEarnings = paidBookings
       .filter((b) => new Date(b.bookingDate) >= startOfToday)
-      .reduce((sum, b) => sum + b.totalPrice, 0);
+      .reduce((sum, b) => sum + Number(b.totalPrice), 0);
     const weeklyEarnings = paidBookings
       .filter((b) => new Date(b.bookingDate) >= startOfWeekDate)
-      .reduce((sum, b) => sum + b.totalPrice, 0);
+      .reduce((sum, b) => sum + Number(b.totalPrice), 0);
     const monthlyEarnings = paidBookings
       .filter((b) => new Date(b.bookingDate) >= startOfMonth)
-      .reduce((sum, b) => sum + b.totalPrice, 0);
+      .reduce((sum, b) => sum + Number(b.totalPrice), 0);
 
     const methodCounts = paidBookings.reduce(
       (acc, b) => {
-        const method = b.payment?.paymentMethod || 'Cash';
-        acc[method] = (acc[method] || 0) + b.totalPrice;
+        const paidPayment = b.payments.find((p) => p.status === 'PAID');
+        const method = paidPayment?.paymentMethod || b.payments[0]?.paymentMethod || 'Cash';
+        acc[method] = (acc[method] || 0) + Number(b.totalPrice);
         return acc;
       },
       {} as Record<string, number>
     );
 
-    const transactions = paidBookings.map((b) => ({
-      id: b.id,
-      customer: b.user.fullName,
-      venue: b.court.venue.name,
-      court: b.court.name,
-      amount: b.totalPrice,
-      method: b.payment?.paymentMethod || 'Cash',
-      date: b.bookingDate,
-      status: b.paymentStatus,
-    }));
+    const transactions = paidBookings.map((b) => {
+      const paidPayment = b.payments.find((p) => p.status === 'PAID');
+      return {
+        id: b.id,
+        customer: b.user.fullName,
+        venue: b.court.venue.name,
+        court: b.court.name,
+        amount: Number(b.totalPrice),
+        method: paidPayment?.paymentMethod || b.payments[0]?.paymentMethod || 'Cash',
+        date: b.bookingDate,
+        status: paidPayment?.status || 'PAID',
+      };
+    });
 
     const pendingPayments = bookings
-      .filter((b) => b.paymentStatus === 'PENDING')
+      .filter((b) => !b.payments.some((p) => p.status === 'PAID'))
       .map((b) => ({
         id: b.id,
         customer: b.user.fullName,
-        amount: b.totalPrice,
+        amount: Number(b.totalPrice),
         date: b.bookingDate,
         status: b.status,
       }));

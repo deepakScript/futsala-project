@@ -21,7 +21,7 @@ export class SuperAdminDashboardRepository {
       prisma.booking.count(),
       prisma.booking.aggregate({
         _sum: { totalPrice: true },
-        where: { paymentStatus: 'PAID' },
+        where: { payments: { some: { status: 'PAID' } } },
       }),
       prisma.booking.count({
         where: { createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
@@ -32,7 +32,7 @@ export class SuperAdminDashboardRepository {
           courts: {
             include: {
               bookings: {
-                where: { paymentStatus: 'PAID' },
+                where: { payments: { some: { status: 'PAID' } } },
                 select: { totalPrice: true },
               },
               _count: { select: { bookings: true } },
@@ -50,7 +50,7 @@ export class SuperAdminDashboardRepository {
       totalVenues,
       activeVenueOwners,
       totalBookings,
-      totalRevenue: totalRevenueData._sum.totalPrice || 0,
+      totalRevenue: totalRevenueData._sum?.totalPrice ? Number(totalRevenueData._sum.totalPrice) : 0,
       todayBookings,
       pendingApprovals,
       venuesWithCourts,

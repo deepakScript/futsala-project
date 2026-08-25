@@ -10,9 +10,76 @@ const axiosInstance = axios.create({
   withCredentials: true,
 })
 
+// -----------------------------------------------
+// Request interceptor – pass through unchanged
+// -----------------------------------------------
 axiosInstance.interceptors.request.use(
   (config) => config,
   (error) => Promise.reject(error)
+)
+
+// -----------------------------------------------
+// Response interceptor – auto-refresh on 401
+// -----------------------------------------------
+let isRefreshing = false
+let failedQueue: Array<{
+  resolve: (value?: unknown) => void
+  reject: (reason?: unknown) => void
+}> = []
+
+const processQueue = (error: unknown) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error)
+    } else {
+      prom.resolve()
+    }
+  })
+  failedQueue = []
+}
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config
+
+    // Only attempt token refresh on 401 from non-auth endpoints
+    const isAuthRoute =
+      originalRequest.url?.includes('/auth/login') ||
+      originalRequest.url?.includes('/auth/refresh')
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
+      originalRequest._retry = true
+
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject })
+        })
+          .then(() => axiosInstance(originalRequest))
+          .catch((err) => Promise.reject(err))
+      }
+
+      isRefreshing = true
+
+      try {
+        // Attempt silent token refresh using the HTTP-only cookie
+        await axiosInstance.post('/auth/refresh')
+        processQueue(null)
+        return axiosInstance(originalRequest)
+      } catch (refreshError) {
+        processQueue(refreshError)
+        // Clear local auth state and redirect to login
+        if (typeof window !== 'undefined') {
+          window.location.href = '/auth'
+        }
+        return Promise.reject(refreshError)
+      } finally {
+        isRefreshing = false
+      }
+    }
+
+    return Promise.reject(error)
+  }
 )
 
 export default axiosInstance

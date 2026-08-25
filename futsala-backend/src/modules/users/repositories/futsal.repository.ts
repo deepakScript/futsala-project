@@ -16,18 +16,15 @@ export class FutsalRepository {
           select: {
             id: true,
             name: true,
-            courtType: true,
-            surfaceType: true,
-            isIndoor: true,
             pricePerHour: true,
+            isActive: true,
           },
         },
         tenant: {
           select: {
             id: true,
             name: true,
-            email: true,
-            phoneNumber: true,
+            slug: true,
           },
         },
       },
@@ -51,8 +48,7 @@ export class FutsalRepository {
           select: {
             id: true,
             name: true,
-            email: true,
-            phoneNumber: true,
+            slug: true,
           },
         },
       },
@@ -100,17 +96,15 @@ export class FutsalRepository {
           select: {
             id: true,
             name: true,
-            courtType: true,
-            surfaceType: true,
-            isIndoor: true,
             pricePerHour: true,
+            isActive: true,
           },
         },
         tenant: {
           select: {
             id: true,
             name: true,
-            phoneNumber: true,
+            slug: true,
           },
         },
       },

@@ -28,8 +28,17 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   res.cookie('refreshToken', result.refreshToken, {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: '/',
+  });
+
+  res.cookie('token', result.accessToken, {
+    httpOnly: true,
+    secure: env.NODE_ENV === 'production',
+    sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 15 * 60 * 1000,
+    path: '/',
   });
 
   res.status(201).json({
@@ -38,6 +47,8 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     data: {
       user: result.user,
       token: result.accessToken,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
     },
   });
 });
@@ -62,8 +73,17 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   res.cookie('refreshToken', result.refreshToken, {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: '/',
+  });
+
+  res.cookie('token', result.accessToken, {
+    httpOnly: true,
+    secure: env.NODE_ENV === 'production',
+    sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 15 * 60 * 1000,
+    path: '/',
   });
 
   res.status(200).json({
@@ -72,15 +92,29 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     data: {
       user: result.user,
       token: result.accessToken,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
     },
   });
 });
 
-export const logout = asyncHandler(async (_req: Request, res: Response) => {
+export const logout = asyncHandler(async (req: Request, res: Response) => {
+  const refreshTokenVal = req.cookies?.refreshToken || req.body?.refreshToken;
+  // userId comes from the access token already decoded by middleware (or from cookie)
+  const userId = (req as any).user?.userId || (req as any).user?.id;
+  await authService.logout(userId, refreshTokenVal);
+
   res.clearCookie('refreshToken', {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
+    path: '/',
+  });
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: env.NODE_ENV === 'production',
+    sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
+    path: '/',
   });
 
   res.status(200).json({
@@ -90,14 +124,23 @@ export const logout = asyncHandler(async (_req: Request, res: Response) => {
 });
 
 export const refreshToken = asyncHandler(async (req: Request, res: Response) => {
-  const token = req.cookies.refreshToken || req.body.refreshToken;
+  const token = req.cookies?.refreshToken || req.body?.refreshToken;
   const result = await authService.refreshAccessToken(token);
 
   res.cookie('refreshToken', result.refreshToken, {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: '/',
+  });
+
+  res.cookie('token', result.accessToken, {
+    httpOnly: true,
+    secure: env.NODE_ENV === 'production',
+    sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 15 * 60 * 1000,
+    path: '/',
   });
 
   res.status(200).json({
@@ -105,6 +148,8 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
     message: 'Token refreshed successfully',
     data: {
       accessToken: result.accessToken,
+      token: result.accessToken,
+      refreshToken: result.refreshToken,
       user: result.user,
     },
   });

@@ -36,6 +36,7 @@ export class SuperAdminUsersRepository {
       where: { userId },
       include: {
         court: { include: { venue: { select: { name: true } } } },
+        payments: true,
       },
       orderBy: { bookingDate: 'desc' },
     });

@@ -82,8 +82,6 @@ export class SuperAdminOwnersRepository {
       data: {
         name: `${data.fullName}'s Organization`,
         slug: uniqueSlug,
-        email: data.email,
-        phoneNumber: data.phoneNumber || null,
       },
     });
 
@@ -143,7 +141,15 @@ export class SuperAdminOwnersRepository {
           },
         },
       },
-      include: { courts: { include: { bookings: true } } },
+      include: {
+        courts: {
+          include: {
+            bookings: {
+              include: { payments: true },
+            },
+          },
+        },
+      },
     });
   }
 }
