@@ -8,9 +8,6 @@ import {
   findRefreshToken,
   deleteRefreshToken,
   revokeAccessToken,
-  accessTokenCookieOptions,
-  refreshTokenCookieOptions,
-  cookieOptions,
 } from '../../../utils/jwt';
 
 export class SuperAdminAuthService {
@@ -46,12 +43,8 @@ export class SuperAdminAuthService {
     await storeRefreshToken(user.id, refreshToken);
 
     return {
-      token: accessToken,
       accessToken,
       refreshToken,
-      cookieOptions,
-      accessTokenCookieOptions,
-      refreshTokenCookieOptions,
       user: { id: user.id, email: user.email, fullName: user.fullName, role: user.role },
     };
   }
@@ -93,16 +86,23 @@ export class SuperAdminAuthService {
     await storeRefreshToken(user.id, newRefreshToken);
 
     return {
-      token: newAccessToken,
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
       user: { id: user.id, email: user.email, fullName: user.fullName, role: user.role },
     };
   }
 
-  async logout(userId?: string, token?: string): Promise<void> {
-    if (userId) await revokeAccessToken(userId);
-    if (token) await deleteRefreshToken(token);
+  async logout(refreshToken?: string, userId?: string): Promise<void> {
+    if (refreshToken) {
+      if (!userId) {
+        const decoded = verifyRefreshToken<{ userId: string; id?: string }>(refreshToken);
+        userId = decoded?.userId || decoded?.id;
+      }
+      await deleteRefreshToken(refreshToken);
+    }
+    if (userId) {
+      await revokeAccessToken(userId);
+    }
   }
 }
 

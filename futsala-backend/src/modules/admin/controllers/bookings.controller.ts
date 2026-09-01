@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../../../middlewares/asyncHandler';
-import { adminBookingService } from '../services/venues.service';
+import { adminBookingService } from '../services/bookings.service';
 
 export const getBookings = asyncHandler(async (req: Request, res: Response) => {
   const ownerId = req.venueOwner!.id;

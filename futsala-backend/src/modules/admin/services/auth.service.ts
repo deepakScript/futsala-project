@@ -10,9 +10,6 @@ import {
   findRefreshToken,
   deleteRefreshToken,
   revokeAccessToken,
-  accessTokenCookieOptions,
-  refreshTokenCookieOptions,
-  cookieOptions,
 } from '../../../utils/jwt';
 import { emailQueue } from '../../../utils/email/email.queue';
 import env from '../../../config/env.config';
@@ -51,12 +48,8 @@ export class AdminAuthService {
     await storeRefreshToken(user.id, refreshToken);
 
     return {
-      token: accessToken,
       accessToken,
       refreshToken,
-      cookieOptions,
-      accessTokenCookieOptions,
-      refreshTokenCookieOptions,
       user: { id: user.id, name: user.fullName, email: user.email, role: user.role },
     };
   }
@@ -98,16 +91,23 @@ export class AdminAuthService {
     await storeRefreshToken(user.id, newRefreshToken);
 
     return {
-      token: newAccessToken,
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
       user: { id: user.id, name: user.fullName, email: user.email, role: user.role },
     };
   }
 
-  async logout(userId?: string, refreshToken?: string): Promise<void> {
-    if (userId) await revokeAccessToken(userId);          // Evict from Redis immediately
-    if (refreshToken) await deleteRefreshToken(refreshToken); // Revoke DB refresh token
+  async logout(refreshToken?: string, userId?: string): Promise<void> {
+    if (refreshToken) {
+      if (!userId) {
+        const decoded = verifyRefreshToken<{ userId: string; id?: string }>(refreshToken);
+        userId = decoded?.userId || decoded?.id;
+      }
+      await deleteRefreshToken(refreshToken);
+    }
+    if (userId) {
+      await revokeAccessToken(userId);
+    }
   }
 
   async requestPasswordReset(email: string): Promise<void> {
